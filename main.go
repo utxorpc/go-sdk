@@ -21,3 +21,7 @@ func NewClient(httpClient *http.Client, baseUrl string) UtxorpcClient {
 	client.ChainSync = chainSyncClient
 	return client
 }
+
+func (u *UtxorpcClient) URL() string {
+	return u.baseUrl
+}
