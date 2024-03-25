@@ -5,9 +5,9 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/build/buildconnect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync/syncconnect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit/submitconnect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit/watchconnect"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync/syncconnect"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/watch/watchconnect"
 )
 
 type UtxorpcClient struct {
