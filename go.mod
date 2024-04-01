@@ -8,7 +8,7 @@ go 1.20
 require (
 	connectrpc.com/connect v1.15.0
 	github.com/utxorpc/go-codegen v0.4.4
-	golang.org/x/net v0.21.0
+	golang.org/x/net v0.22.0
 )
 
 require (
