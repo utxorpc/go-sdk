@@ -31,7 +31,7 @@ func main() {
 			},
 		},
 	}
-        baseUrl := "https://preview.utxorpc-v0.demeter.run"
+	baseUrl := "https://preview.utxorpc-v0.demeter.run"
 	client := utxorpc.NewClient(httpClient, baseUrl)
 	req := connect.NewRequest(&sync.FetchBlockRequest{})
 	// set API key for demeter
