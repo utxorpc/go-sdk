@@ -1,13 +1,13 @@
 module github.com/utxorpc/go-sdk
 
-go 1.20
+go 1.21
 
 // XXX: uncomment when testing local changes to spec, after generate
 // replace github.com/utxorpc/go-codegen => ../go-codegen
 
 require (
 	connectrpc.com/connect v1.16.1
-	github.com/utxorpc/go-codegen v0.4.4
+	github.com/utxorpc/go-codegen v0.5.1
 	golang.org/x/net v0.24.0
 )
 
