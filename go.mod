@@ -6,7 +6,7 @@ go 1.21
 // replace github.com/utxorpc/go-codegen => ../go-codegen
 
 require (
-	connectrpc.com/connect v1.16.1
+	connectrpc.com/connect v1.16.2
 	github.com/utxorpc/go-codegen v0.5.1
 	golang.org/x/net v0.25.0
 )
