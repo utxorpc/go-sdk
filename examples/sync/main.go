@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
-	"os"
 
 	"connectrpc.com/connect"
 	sync "github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
@@ -17,7 +18,18 @@ import (
 
 func main() {
 	ctx := context.Background()
-	httpClient := &http.Client{
+	baseUrl := "https://preview.utxorpc-v0.demeter.run"
+	// set API key for demeter
+	apiKey := "dmtr_utxorpc1..."
+	client := createUtxoRPCClient(baseUrl)
+
+	fetchBlock(ctx, client, apiKey)
+	followTip(ctx, client, apiKey, "230eeba5de6b0198f64a3e801f92fa1ebf0f3a42a74dbd1922187249ad3038e7")
+	followTip(ctx, client, apiKey, "")
+}
+
+func createHttpClient() *http.Client {
+	return &http.Client{
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
@@ -31,21 +43,26 @@ func main() {
 			},
 		},
 	}
-	baseUrl := "https://preview.utxorpc-v0.demeter.run"
+}
+
+func createUtxoRPCClient(baseUrl string) *utxorpc.UtxorpcClient {
+	httpClient := createHttpClient()
 	client := utxorpc.NewClient(httpClient, baseUrl)
+	return &client
+}
+
+func setAPIKeyHeader(req connect.AnyRequest, apiKey string) {
+	req.Header().Set("dmtr-api-key", apiKey)
+}
+
+func fetchBlock(ctx context.Context, client *utxorpc.UtxorpcClient, apiKey string) {
 	req := connect.NewRequest(&sync.FetchBlockRequest{})
-	// set API key for demeter
-	req.Header().Set("dmtr-api-key", "dmtr_utxorpc1...")
-	fmt.Println("connecting to utxorpc host:", baseUrl)
+	setAPIKeyHeader(req, apiKey)
+
+	fmt.Println("connecting to utxorpc host:", client.URL())
 	chainSync, err := client.ChainSync.FetchBlock(ctx, req)
 	if err != nil {
-		fmt.Println(connect.CodeOf(err))
-		if connectErr := new(connect.Error); errors.As(err, &connectErr) {
-			fmt.Println(connectErr.Message())
-			fmt.Println(connectErr.Details())
-		}
-		panic(err)
-		os.Exit(1)
+		handleError(err)
 	}
 	fmt.Println("connected to utxorpc...")
 	for i, blockRef := range chainSync.Msg.Block {
@@ -53,4 +70,44 @@ func main() {
 		fmt.Printf("Index: %d\n", blockRef.GetCardano().GetHeader().GetSlot())
 		fmt.Printf("Hash: %x\n", blockRef.GetCardano().GetHeader().GetHash())
 	}
+}
+
+// FollowTipRequest with Intersect
+func followTip(ctx context.Context, client *utxorpc.UtxorpcClient, apiKey string, blockHash string) {
+	var req *connect.Request[sync.FollowTipRequest]
+
+	if blockHash == "" {
+		req = connect.NewRequest(&sync.FollowTipRequest{})
+	} else {
+		hash, err := hex.DecodeString(blockHash)
+		if err != nil {
+			log.Fatalf("failed to decode hex string: %v", err)
+		}
+
+		blockRef := &sync.BlockRef{
+			Hash: hash,
+		}
+		req = connect.NewRequest(&sync.FollowTipRequest{
+			Intersect: []*sync.BlockRef{blockRef},
+		})
+	}
+
+	setAPIKeyHeader(req, apiKey)
+
+	fmt.Println("connecting to utxorpc host:", client.URL())
+	resp, err := client.ChainSync.FollowTip(ctx, req)
+	if err != nil {
+		handleError(err)
+	}
+	fmt.Println("connected to utxorpc...")
+	fmt.Printf("Response: %+v\n", resp)
+}
+
+func handleError(err error) {
+	fmt.Println(connect.CodeOf(err))
+	if connectErr := new(connect.Error); errors.As(err, &connectErr) {
+		fmt.Println(connectErr.Message())
+		fmt.Println(connectErr.Details())
+	}
+	panic(err)
 }
