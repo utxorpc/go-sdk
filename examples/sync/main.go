@@ -22,7 +22,7 @@ func main() {
 	)
 
 	fetchBlock(ctx, client)
-	followTip(ctx, client, "230eeba5de6b0198f64a3e801f92fa1ebf0f3a42a74dbd1922187249ad3038e7")
+	followTip(ctx, client, "5d316b4722f832bb7cee7914cbcc7b977a03fea6884da5f2157a6ae420b91280")
 	followTip(ctx, client, "")
 }
 
@@ -64,10 +64,54 @@ func followTip(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash str
 	}
 	client.AddHeadersToRequest(req)
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	resp, err := client.ChainSync.FollowTip(ctx, req)
+	stream, err := client.ChainSync.FollowTip(ctx, req)
 	if err != nil {
 		utxorpc.HandleError(err)
+		return
 	}
-	fmt.Println("connected to utxorpc...")
-	fmt.Printf("Response: %+v\n", resp)
+	fmt.Println("Connected to utxorpc host, following tip...")
+
+	for stream.Receive() {
+		resp := stream.Msg()
+		action := resp.GetAction()
+		switch a := action.(type) {
+		case *sync.FollowTipResponse_Apply:
+			fmt.Println("Action: Apply")
+			printAnyChainBlock(a.Apply)
+		case *sync.FollowTipResponse_Undo:
+			fmt.Println("Action: Undo")
+			printAnyChainBlock(a.Undo)
+		case *sync.FollowTipResponse_Reset_:
+			fmt.Println("Action: Reset")
+			printBlockRef(a.Reset_)
+		default:
+			fmt.Println("Unknown action type")
+		}
+	}
+
+	if err := stream.Err(); err != nil {
+		fmt.Println("Stream ended with error:", err)
+	} else {
+		fmt.Println("Stream ended normally.")
+	}
+}
+
+func printAnyChainBlock(block *sync.AnyChainBlock) {
+	if block == nil {
+		return
+	}
+	if cardanoBlock := block.GetCardano(); cardanoBlock != nil {
+		hash := hex.EncodeToString(cardanoBlock.Header.Hash)
+		slot := cardanoBlock.Header.Slot
+		fmt.Printf("Block Slot: %d, Block Hash: %s\n", slot, hash)
+	}
+}
+
+func printBlockRef(blockRef *sync.BlockRef) {
+	if blockRef == nil {
+		return
+	}
+	hash := hex.EncodeToString(blockRef.Hash)
+	slot := blockRef.Index
+	fmt.Printf("Block Slot: %d, Block Hash: %s\n", slot, hash)
 }
