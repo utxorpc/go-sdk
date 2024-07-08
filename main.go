@@ -19,9 +19,9 @@ type UtxorpcClient struct {
 	httpClient connect.HTTPClient
 	baseUrl    string
 	headers    map[string]string
-	ChainSync  syncconnect.ChainSyncServiceClient
 	Query      queryconnect.QueryServiceClient
 	Submit     submitconnect.SubmitServiceClient
+	Sync       syncconnect.SyncServiceClient
 	Watch      watchconnect.WatchServiceClient
 }
 
@@ -37,9 +37,9 @@ func NewClient(httpClient *http.Client, baseUrl string, options ...ClientOption)
 	client := &UtxorpcClient{
 		httpClient: httpClient,
 		baseUrl:    baseUrl,
-		ChainSync:  syncconnect.NewChainSyncServiceClient(httpClient, baseUrl, connect.WithGRPC()),
 		Query:      queryconnect.NewQueryServiceClient(httpClient, baseUrl, connect.WithGRPC()),
 		Submit:     submitconnect.NewSubmitServiceClient(httpClient, baseUrl, connect.WithGRPC()),
+		Sync:       syncconnect.NewSyncServiceClient(httpClient, baseUrl, connect.WithGRPC()),
 		Watch:      watchconnect.NewWatchServiceClient(httpClient, baseUrl, connect.WithGRPC()),
 	}
 
