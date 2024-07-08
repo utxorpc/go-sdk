@@ -31,7 +31,7 @@ func fetchBlock(ctx context.Context, client *utxorpc.UtxorpcClient) {
 	client.AddHeadersToRequest(req)
 
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	chainSync, err := client.ChainSync.FetchBlock(ctx, req)
+	chainSync, err := client.Sync.FetchBlock(ctx, req)
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
@@ -64,7 +64,7 @@ func followTip(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash str
 	}
 	client.AddHeadersToRequest(req)
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	stream, err := client.ChainSync.FollowTip(ctx, req)
+	stream, err := client.Sync.FollowTip(ctx, req)
 	if err != nil {
 		utxorpc.HandleError(err)
 		return
