@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	sync "github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
 	utxorpc "github.com/utxorpc/go-sdk"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func main() {
@@ -21,9 +22,9 @@ func main() {
 		}),
 	)
 
-	fetchBlock(ctx, client)
-	followTip(ctx, client, "5d316b4722f832bb7cee7914cbcc7b977a03fea6884da5f2157a6ae420b91280")
-	followTip(ctx, client, "")
+	// fetchBlock(ctx, client)
+	followTip(ctx, client, "235f9a217b826276d6cdfbb05c11572a06aef092535b6df8c682d501af59c230", 65017558, nil)
+	// followTip(ctx, client, "")
 }
 
 func fetchBlock(ctx context.Context, client *utxorpc.UtxorpcClient) {
@@ -43,25 +44,48 @@ func fetchBlock(ctx context.Context, client *utxorpc.UtxorpcClient) {
 	}
 }
 
-// FollowTipRequest with Intersect
-func followTip(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash string) {
+func followTip(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash string, blockIndex int64, fieldMaskPaths []string) {
 	var req *connect.Request[sync.FollowTipRequest]
+	var intersect []*sync.BlockRef
+	var fieldMask *fieldmaskpb.FieldMask
 
-	if blockHash == "" {
-		req = connect.NewRequest(&sync.FollowTipRequest{})
-	} else {
+	// Construct the BlockRef based on the provided parameters
+	blockRef := &sync.BlockRef{}
+	if blockHash != "" {
 		hash, err := hex.DecodeString(blockHash)
 		if err != nil {
 			log.Fatalf("failed to decode hex string: %v", err)
 		}
-
-		blockRef := &sync.BlockRef{
-			Hash: hash,
-		}
-		req = connect.NewRequest(&sync.FollowTipRequest{
-			Intersect: []*sync.BlockRef{blockRef},
-		})
+		blockRef.Hash = hash
 	}
+	// We assume blockIndex can be 0 or any positive number
+	if blockIndex > -1 {
+		blockRef.Index = uint64(blockIndex)
+	}
+
+	// Only add blockRef to intersect if at least one of blockHash or blockIndex is provided
+	if blockHash != "" || blockIndex > -1 {
+		intersect = []*sync.BlockRef{blockRef}
+	}
+
+	// Construct the FieldMask if paths are provided
+	if len(fieldMaskPaths) > 0 {
+		fieldMask = &fieldmaskpb.FieldMask{
+			Paths: fieldMaskPaths,
+		}
+	}
+
+	// Create the FollowTipRequest
+	req = connect.NewRequest(&sync.FollowTipRequest{
+		Intersect: intersect,
+		FieldMask: fieldMask,
+	})
+
+	// Print BlockRef details if intersect is provided
+	if len(intersect) > 0 {
+		fmt.Printf("Blockref: %d, %x\n", req.Msg.Intersect[0].Index, req.Msg.Intersect[0].Hash)
+	}
+
 	client.AddHeadersToRequest(req)
 	fmt.Println("connecting to utxorpc host:", client.URL())
 	stream, err := client.Sync.FollowTip(ctx, req)
