@@ -25,15 +25,15 @@ func main() {
 	)
 
 	// Set mode to "readParams", "readUtxos", "searchUtxos" to select the desired example.
-	var mode string = "readParams"
+	var mode string = "searchUtxos"
 
 	switch mode {
 	case "readParams":
 		readParams(ctx, client)
 	case "readUtxos":
-		readUtxos(ctx, client)
+		readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299")
 	case "searchUtxos":
-		searchUtxos(ctx, client)
+		searchUtxos(ctx, client, "60c0359ebb7d0688d79064bd118c99c8b87b5853e3af59245bb97e84d2")
 	default:
 		fmt.Println("Unknown mode:", mode)
 	}
@@ -51,8 +51,8 @@ func readParams(ctx context.Context, client *utxorpc.UtxorpcClient) {
 	fmt.Printf("Response: %+v\n", resp)
 }
 
-func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient) {
-	txHash, err := hex.DecodeString("3394533cb02fb71b062690d85bbe9d79a7b6f8f4c1b92b0e728fe7b93a1440c9")
+func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr string) {
+	txHash, err := hex.DecodeString(txHashStr)
 	if err != nil {
 		log.Fatalf("failed to decode hex string: %v", err)
 	}
@@ -69,12 +69,25 @@ func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient) {
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
-	fmt.Printf("Response: %+v\n", resp)
+
+	if resp.Msg.LedgerTip != nil {
+		fmt.Printf("Ledger Tip:\n  Slot: %d\n  Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
+	}
+
+	for _, item := range resp.Msg.Items {
+		fmt.Println("UTxO Data:")
+		fmt.Printf("  Tx Hash: %x\n", item.TxoRef.Hash)
+		fmt.Printf("  Output Index: %d\n", item.TxoRef.Index)
+		fmt.Printf("  Native Bytes: %x\n", item.NativeBytes)
+		if cardano := item.GetCardano(); cardano != nil {
+			fmt.Println("  Cardano UTxO:")
+			fmt.Printf("    Address: %s\n", cardano.Address)
+			fmt.Printf("    Coin: %d\n", cardano.Coin)
+		}
+	}
 }
 
-func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient) {
-
-	rawAddress := "00fc26cca7cc4b67032c38ed6a568237cc05ba73e31d375198ffe0e7f56c4506809de7d19eb9b619908e2027471e97fe953b3234a476258560"
+func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress string) {
 	exactAddress, err := hex.DecodeString(rawAddress)
 	if err != nil {
 		log.Fatalf("failed to decode hex string address: %v", err)
@@ -103,5 +116,20 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient) {
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
-	fmt.Printf("Response: %+v\n", resp)
+
+	if resp.Msg.LedgerTip != nil {
+		fmt.Printf("Ledger Tip:\n  Slot: %d\n  Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
+	}
+
+	for _, item := range resp.Msg.Items {
+		fmt.Println("UTxO Data:")
+		fmt.Printf("  Tx Hash: %x\n", item.TxoRef.Hash)
+		fmt.Printf("  Output Index: %d\n", item.TxoRef.Index)
+		fmt.Printf("  Native Bytes: %x\n", item.NativeBytes)
+		if cardano := item.GetCardano(); cardano != nil {
+			fmt.Println("  Cardano UTxO:")
+			fmt.Printf("    Address: %s\n", cardano.Address)
+			fmt.Printf("    Coin: %d\n", cardano.Coin)
+		}
+	}
 }
