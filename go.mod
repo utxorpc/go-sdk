@@ -7,7 +7,7 @@ go 1.21
 
 require (
 	connectrpc.com/connect v1.16.2
-	github.com/utxorpc/go-codegen v0.7.0
+	github.com/utxorpc/go-codegen v0.8.0
 	golang.org/x/net v0.27.0
 	google.golang.org/protobuf v1.34.2
 )
