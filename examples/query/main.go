@@ -31,7 +31,7 @@ func main() {
 	case "readParams":
 		readParams(ctx, client)
 	case "readUtxos":
-		readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299")
+		readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299", 0)
 	case "searchUtxos":
 		searchUtxos(ctx, client, "60c0359ebb7d0688d79064bd118c99c8b87b5853e3af59245bb97e84d2")
 	default:
@@ -49,15 +49,23 @@ func readParams(ctx context.Context, client *utxorpc.UtxorpcClient) {
 		utxorpc.HandleError(err)
 	}
 	fmt.Printf("Response: %+v\n", resp)
+
+	if resp.Msg.LedgerTip != nil {
+		fmt.Printf("Ledger Tip: Slot: %d, Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
+	}
+	if resp.Msg.Values != nil {
+		fmt.Printf("Cardano: %+v\n", resp.Msg.Values)
+	}
 }
 
-func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr string) {
+func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr string, txIndex uint32) {
 	txHash, err := hex.DecodeString(txHashStr)
 	if err != nil {
 		log.Fatalf("failed to decode hex string: %v", err)
 	}
 	txoRef := &query.TxoRef{
-		Hash: txHash,
+		Hash:  txHash,
+		Index: txIndex,
 	}
 
 	req := connect.NewRequest(&query.ReadUtxosRequest{
@@ -69,6 +77,8 @@ func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr str
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
+
+	fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.LedgerTip != nil {
 		fmt.Printf("Ledger Tip:\n  Slot: %d\n  Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
@@ -101,9 +111,6 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 						Address: &cardano.AddressPattern{
 							ExactAddress: exactAddress,
 						},
-						Asset: &cardano.AssetPattern{
-							// Populate the fields as necessary
-						},
 					},
 				},
 			},
@@ -116,6 +123,8 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
+
+	fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.LedgerTip != nil {
 		fmt.Printf("Ledger Tip:\n  Slot: %d\n  Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
