@@ -79,6 +79,14 @@ func CreateUtxoRPCClient(baseUrl string, options ...ClientOption) *UtxorpcClient
 	return NewClient(httpClient, baseUrl, options...)
 }
 
+func (u *UtxorpcClient) Headers() map[string]string {
+	headers := u.headers
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	return headers
+}
+
 func (u *UtxorpcClient) SetHeader(key, value string) {
 	if u.headers == nil {
 		u.headers = make(map[string]string)
