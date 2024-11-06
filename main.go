@@ -68,14 +68,14 @@ func createHttpClient() *http.Client {
 				// If you're also using this client for non-h2c traffic, you may want
 				// to delegate to tls.Dial if the network isn't TCP or the addr isn't
 				// in an allowlist.
-				// return net.Dial(network, addr)
+				return net.Dial(network, addr)
 
-				// Establish a TLS connection using the custom TLS configuration
-				conn, err := tls.Dial(network, addr, tlsConfig)
-				if err != nil {
-					return nil, fmt.Errorf("failed to establish TLS connection: %w", err)
-				}
-				return conn, nil
+				// // Establish a TLS connection using the custom TLS configuration
+				// conn, err := tls.Dial(network, addr, tlsConfig)
+				// if err != nil {
+				// 	return nil, fmt.Errorf("failed to establish TLS connection: %w", err)
+				// }
+				// return conn, nil
 			},
 		},
 	}

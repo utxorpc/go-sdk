@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -25,13 +26,13 @@ func main() {
 	)
 
 	// Set mode to "readParams", "readUtxos", "searchUtxos" to select the desired example.
-	var mode string = "searchUtxos"
+	var mode string = "readUtxos" // or "readParams", "searchUtxos"
 
 	switch mode {
 	case "readParams":
 		readParams(ctx, client)
 	case "readUtxos":
-		readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299", 0)
+		readUtxos(ctx, client, "eRMJtrD6zICz+olugwmZ577zIepSefa+2+EnnuHp1K4=", 0)
 	case "searchUtxos":
 		searchUtxos(ctx, client, "60c0359ebb7d0688d79064bd118c99c8b87b5853e3af59245bb97e84d2")
 	default:
@@ -59,25 +60,49 @@ func readParams(ctx context.Context, client *utxorpc.UtxorpcClient) {
 }
 
 func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr string, txIndex uint32) {
-	txHash, err := hex.DecodeString(txHashStr)
-	if err != nil {
-		log.Fatalf("failed to decode hex string: %v", err)
+	var txHashBytes []byte
+	var err error
+
+	// Attempt to decode the input as hex
+	txHashBytes, err = hex.DecodeString(txHashStr)
+	if err == nil {
+		// Successfully decoded as hex
+		log.Printf("Input txHashStr decoded from hex.")
+	} else {
+		// If not hex, attempt to decode as Base64
+		txHashBytes, err = base64.StdEncoding.DecodeString(txHashStr)
+		if err == nil {
+			// Successfully decoded as Base64
+			log.Printf("Input txHashStr decoded from Base64.")
+		} else {
+			// Input is neither valid hex nor Base64
+			log.Printf("Input txHashStr is neither valid hex nor Base64.")
+			fmt.Println("Error: txHashStr must be a valid hexadecimal or Base64 string.")
+			return
+		}
 	}
+
+	// Create TxoRef with the decoded hash bytes
 	txoRef := &query.TxoRef{
-		Hash:  txHash,
+		Hash:  txHashBytes, // Use the decoded []byte
 		Index: txIndex,
 	}
 
+	// Prepare the request
 	req := connect.NewRequest(&query.ReadUtxosRequest{
 		Keys: []*query.TxoRef{txoRef},
 	})
 	client.AddHeadersToRequest(req)
-	fmt.Println("connecting to utxorpc host:", client.URL())
+	fmt.Println("Connecting to utxorpc host:", client.URL())
+
+	// Send the request
 	resp, err := client.Query.ReadUtxos(ctx, req)
 	if err != nil {
 		utxorpc.HandleError(err)
+		return
 	}
 
+	// Process the response
 	fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.LedgerTip != nil {
@@ -91,8 +116,11 @@ func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr str
 		fmt.Printf("  Native Bytes: %x\n", item.NativeBytes)
 		if cardano := item.GetCardano(); cardano != nil {
 			fmt.Println("  Cardano UTxO:")
-			fmt.Printf("    Address: %s\n", cardano.Address)
+			fmt.Printf("    Address: %x\n", cardano.Address)
 			fmt.Printf("    Coin: %d\n", cardano.Coin)
+			if cardano.Datum != nil {
+				fmt.Printf("    Datum Hash: %x\n", cardano.Datum.Hash)
+			}
 		}
 	}
 }

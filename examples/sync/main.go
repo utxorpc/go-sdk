@@ -15,21 +15,23 @@ import (
 func main() {
 	ctx := context.Background()
 	baseUrl := "https://preview.utxorpc-v0.demeter.run"
-	client := utxorpc.CreateUtxoRPCClient(baseUrl,
-		// set API key for demeter
-		utxorpc.WithHeaders(map[string]string{
-			"dmtr-api-key": "dmtr_utxorpc1...",
-		}),
-	)
+	baseUrl = "http://localhost:9090"
+	// baseUrl = "https://utxorpc.blinklabs.io"
+	// baseUrl = "https://34.134.70.22"
+	// baseUrl = "http://localhost:52053"
+	client := utxorpc.CreateUtxoRPCClient(baseUrl) // set API key for demeter
+	// utxorpc.WithHeaders(map[string]string{
+	// 	"dmtr-api-key": "dmtr_utxorpc1...",
+	// }),
 
 	// Set mode to "fetchBlock" or "followTip" to select the desired example.
-	var mode string = "followTip"
+	var mode string = "followTip" // or "followTip"
 
 	switch mode {
 	case "fetchBlock":
-		fetchBlock(ctx, client, "235f9a217b826276d6cdfbb05c11572a06aef092535b6df8c682d501af59c230", 65017558, nil)
+		fetchBlock(ctx, client, "7b3b264f771e9e18b683fceb53babfd061c09a88cace715a694dd7f751e2a470", 25980880, nil)
 	case "followTip":
-		followTip(ctx, client, "235f9a217b826276d6cdfbb05c11572a06aef092535b6df8c682d501af59c230", 65017558, nil)
+		followTip(ctx, client, "9cefcc425ba1aac996586adaea2e73356f2efa3c8144173b124cc74ad484a2cc", 74808491, nil)
 	default:
 		fmt.Println("Unknown mode:", mode)
 	}
@@ -68,7 +70,7 @@ func fetchBlock(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash st
 
 	// Create the FetchBlockRequest
 	req = connect.NewRequest(&sync.FetchBlockRequest{
-		Ref: intersect,
+		Ref:       intersect,
 		FieldMask: fieldMask,
 	})
 
@@ -161,7 +163,7 @@ func followTip(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash str
 	}
 
 	if err := stream.Err(); err != nil {
-		fmt.Println("Stream ended with error:", err)
+		fmt.Printf("Stream ended with error: %+v\n", err)
 	} else {
 		fmt.Println("Stream ended normally.")
 	}
