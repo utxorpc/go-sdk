@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"connectrpc.com/connect"
+	"github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
 	utxorpc "github.com/utxorpc/go-sdk"
@@ -34,7 +35,7 @@ func main() {
 	case "readUtxos":
 		readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299", 0)
 	case "searchUtxos":
-		searchUtxos(ctx, client, "60c0359ebb7d0688d79064bd118c99c8b87b5853e3af59245bb97e84d2")
+		searchUtxos(ctx, client, "addr_test1qzrkvcfvd7k5jx54xxkz87p8xn88304jd2g4jsa0hwwmg20k3c7k36lsg8rdupz6e36j5ctzs6lzjymc9vw7djrmgdnqff9z6j")
 	default:
 		fmt.Println("Unknown mode:", mode)
 	}
@@ -123,9 +124,14 @@ func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr str
 }
 
 func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress string) {
-	exactAddress, err := hex.DecodeString(rawAddress)
+	// Use to support bech32/base58 addresses
+	addr, err := common.NewAddress(rawAddress)
 	if err != nil {
-		log.Fatalf("failed to decode hex string address: %v", err)
+		log.Fatalf("failed to create address: %v", err)
+	}
+	addrCbor, err := addr.MarshalCBOR()
+	if err != nil {
+		log.Fatalf("failed to marshal address to CBOR: %v", err)
 	}
 
 	req := connect.NewRequest(&query.SearchUtxosRequest{
@@ -134,7 +140,7 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 				UtxoPattern: &query.AnyUtxoPattern_Cardano{
 					Cardano: &cardano.TxOutputPattern{
 						Address: &cardano.AddressPattern{
-							ExactAddress: exactAddress,
+							ExactAddress: addrCbor,
 						},
 					},
 				},
@@ -162,7 +168,7 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 		fmt.Printf("  Native Bytes: %x\n", item.NativeBytes)
 		if cardano := item.GetCardano(); cardano != nil {
 			fmt.Println("  Cardano UTxO:")
-			fmt.Printf("    Address: %s\n", cardano.Address)
+			fmt.Printf("    Address: %x\n", cardano.Address)
 			fmt.Printf("    Coin: %d\n", cardano.Coin)
 		}
 	}
