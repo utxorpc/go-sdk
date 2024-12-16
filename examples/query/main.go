@@ -12,6 +12,7 @@ import (
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
 	utxorpc "github.com/utxorpc/go-sdk"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func main() {
@@ -33,9 +34,19 @@ func main() {
 	case "readParams":
 		readParams(ctx, client)
 	case "readUtxos":
-		readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299", 0)
+		// readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299", 0)
+		// readUtxos(ctx, client, "791309b6b0facc80b3fa896e830999e7bef321ea5279f6bedbe1279ee1e9d4ae", 1)
+		readUtxos(ctx, client, "24efe5f12d1d93bb419cfb84338d6602dfe78c614b489edb72df0594a077431c", 0)
 	case "searchUtxos":
-		searchUtxos(ctx, client, "addr_test1qzrkvcfvd7k5jx54xxkz87p8xn88304jd2g4jsa0hwwmg20k3c7k36lsg8rdupz6e36j5ctzs6lzjymc9vw7djrmgdnqff9z6j")
+		// searchUtxos(ctx, client, "addr_test1qzrkvcfvd7k5jx54xxkz87p8xn88304jd2g4jsa0hwwmg20k3c7k36lsg8rdupz6e36j5ctzs6lzjymc9vw7djrmgdnqff9z6j", "", "")
+		// https://preprod.cexplorer.io/asset/asset1tvkt35str8aeepuflxmnjzcdj87em8xrlx4ehz
+		// Use policy ID and asset name in hex format (https://cips.cardano.org/cip/CIP-68/)
+		// Hunt
+		searchUtxos(ctx, client, "addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt", "63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5", "0014df1048554e54")
+		// Dedi
+		searchUtxos(ctx, client, "addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt", "63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5", "0014df1044454449")
+		// No assets
+		searchUtxos(ctx, client, "addr_test1qzrkvcfvd7k5jx54xxkz87p8xn88304jd2g4jsa0hwwmg20k3c7k36lsg8rdupz6e36j5ctzs6lzjymc9vw7djrmgdnqff9z6j", "63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5", "0014df1044454449")
 	default:
 		fmt.Println("Unknown mode:", mode)
 	}
@@ -123,7 +134,7 @@ func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr str
 	}
 }
 
-func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress string) {
+func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress string, policyID string, assetName string) {
 	// Use to support bech32/base58 addresses
 	addr, err := common.NewAddress(rawAddress)
 	if err != nil {
@@ -134,19 +145,70 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 		log.Fatalf("failed to marshal address to CBOR: %v", err)
 	}
 
-	req := connect.NewRequest(&query.SearchUtxosRequest{
-		Predicate: &query.UtxoPredicate{
-			Match: &query.AnyUtxoPattern{
-				UtxoPattern: &query.AnyUtxoPattern_Cardano{
-					Cardano: &cardano.TxOutputPattern{
-						Address: &cardano.AddressPattern{
-							ExactAddress: addrCbor,
-						},
-					},
-				},
+	var txOutputPattern *cardano.TxOutputPattern
+	if policyID != "" && assetName != "" {
+		// Convert policyID from hex to bytes
+		policyIDBytes, err := hex.DecodeString(policyID)
+		if err != nil {
+			log.Fatalf("failed to decode policy ID: %v", err)
+		}
+
+		// Convert assetName to bytes
+		assetNameBytes, err := hex.DecodeString(assetName)
+		if err != nil {
+			log.Fatalf("failed to decode asset name: %v", err)
+		}
+
+		// Define the asset pattern with policy ID and asset name
+		assetPattern := &cardano.AssetPattern{
+			PolicyId:  policyIDBytes,
+			AssetName: assetNameBytes,
+		}
+
+		// Define the TxOutput pattern including the asset filter
+		txOutputPattern = &cardano.TxOutputPattern{
+			Address: &cardano.AddressPattern{
+				ExactAddress: addrCbor,
 			},
+			Asset: assetPattern,
+		}
+	} else {
+		// Define the TxOutput pattern with only the address filter
+		txOutputPattern = &cardano.TxOutputPattern{
+			Address: &cardano.AddressPattern{
+				ExactAddress: addrCbor,
+			},
+		}
+	}
+
+	// Wrap the TxOutput pattern in AnyUtxoPattern for Cardano
+	anyUtxoPattern := &query.AnyUtxoPattern{
+		UtxoPattern: &query.AnyUtxoPattern_Cardano{
+			Cardano: txOutputPattern,
 		},
-	})
+	}
+
+	// Define the UtxoPredicate with the pattern
+	utxoPredicate := &query.UtxoPredicate{
+		Match: anyUtxoPattern,
+	}
+
+	// Define the field mask
+	fieldMask := &fieldmaskpb.FieldMask{
+		Paths: []string{
+			// "native_bytes",
+		},
+	}
+
+	// Prepare the search request
+	searchRequest := &query.SearchUtxosRequest{
+		Predicate:  utxoPredicate,
+		FieldMask:  fieldMask,
+		MaxItems:   100, // Adjust based on your requirements
+		StartToken: "",  // For pagination; empty for the first page
+	}
+
+	req := connect.NewRequest(searchRequest)
 	client.AddHeadersToRequest(req)
 
 	fmt.Println("connecting to utxorpc host:", client.URL())
@@ -155,7 +217,8 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 		utxorpc.HandleError(err)
 	}
 
-	fmt.Printf("Response: %+v\n", resp)
+	// Uncomment to print the full response for debugging
+	// fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.LedgerTip != nil {
 		fmt.Printf("Ledger Tip:\n  Slot: %d\n  Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
@@ -170,6 +233,15 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 			fmt.Println("  Cardano UTxO:")
 			fmt.Printf("    Address: %x\n", cardano.Address)
 			fmt.Printf("    Coin: %d\n", cardano.Coin)
+			fmt.Println("    Assets:")
+			for _, multiasset := range cardano.Assets {
+				fmt.Printf("      Policy ID: %x\n", multiasset.PolicyId)
+				for _, asset := range multiasset.Assets {
+					fmt.Printf("        Asset Name: %s\n", string(asset.Name))
+					fmt.Printf("        Output Coin: %d\n", asset.OutputCoin)
+					fmt.Printf("        Mint Coin: %d\n", asset.MintCoin)
+				}
+			}
 		}
 	}
 }
