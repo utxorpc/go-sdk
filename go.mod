@@ -9,7 +9,7 @@ toolchain go1.22.8
 
 require (
 	connectrpc.com/connect v1.17.0
-	github.com/blinklabs-io/gouroboros v0.105.1
+	github.com/blinklabs-io/gouroboros v0.105.2
 	github.com/utxorpc/go-codegen v0.14.0
 	golang.org/x/net v0.32.0
 	google.golang.org/protobuf v1.36.0
