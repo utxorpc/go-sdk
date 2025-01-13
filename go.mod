@@ -1,8 +1,6 @@
 module github.com/utxorpc/go-sdk
 
-go 1.22
-
-toolchain go1.22.8
+go 1.22.9
 
 // XXX: uncomment when testing local changes to spec, after generate
 // replace github.com/utxorpc/go-codegen => ../go-codegen
