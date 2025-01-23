@@ -1,9 +1,9 @@
 package main
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
+	"os"
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit"
@@ -11,82 +11,64 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
-	baseUrl := "https://preview.utxorpc-v0.demeter.run"
+	baseUrl := os.Getenv("UTXORPC_URL")
+	if baseUrl == "" {
+		baseUrl = "https://preview.utxorpc-v0.demeter.run"
+	}
+	client := utxorpc.NewClient(utxorpc.WithBaseUrl(baseUrl))
+	dmtrApiKey := os.Getenv("DMTR_API_KEY")
 	// set API key for demeter
-	client := utxorpc.CreateUtxoRPCClient(baseUrl,
-		// set API key for demeter
-		utxorpc.WithHeaders(map[string]string{
-			"dmtr-api-key": "dmtr_utxorpc1...",
-		}),
-	)
+	if dmtrApiKey != "" {
+		client.SetHeader("dmtr-api-key", "dmtr_apikey...")
+	}
 
 	// Set mode to "submitTx", "readMempool", "waitForTx", or "watchMempool" to select the desired example.
-	var mode string = "submitTx"
+	var mode string = "readMempool"
 
 	switch mode {
 	case "submitTx":
 		// Submit a transaction
 		txCbor := "Replace this with signed CBOR transaction"
-		txRefs, err := submitTx(ctx, client, txCbor)
+		txRef, err := submitTx(client, txCbor)
 		if err != nil {
 			fmt.Printf("Error submitting transaction: %v\n", err)
 			return
 		}
 		// Immediately wait for the transaction confirmation
-		if err := waitForTx(ctx, client, txRefs); err != nil {
+		if err := waitForTx(client, txRef); err != nil {
 			fmt.Printf("Error waiting for transaction: %v\n", err)
 		}
 	case "readMempool":
-		readMempool(ctx, client)
+		readMempool(client)
 	case "waitForTx":
-		if err := waitForTx(ctx, client, []string{"31bffedd962f4a6f5e85620985ccdf71f7b78988a6483e090f42d1e8badcebc8"}); err != nil {
+		if err := waitForTx(client, "31bffedd962f4a6f5e85620985ccdf71f7b78988a6483e090f42d1e8badcebc8"); err != nil {
 			fmt.Printf("Error waiting for transaction: %v\n", err)
 		}
 	case "watchMempool":
-		watchMempool(ctx, client)
+		watchMempool(client)
 	default:
 		fmt.Println("Unknown mode:", mode)
 	}
 }
 
 // Modified submitTx to return transaction references
-func submitTx(ctx context.Context, client *utxorpc.UtxorpcClient, txCbor string) ([]string, error) {
-	// Decode the transaction data from hex
-	txRawBytes, err := hex.DecodeString(txCbor)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode transaction hash: %w", err)
-	}
-
-	// Create a SubmitTxRequest with the transaction data
-	tx := &submit.AnyChainTx{
-		Type: &submit.AnyChainTx_Raw{
-			Raw: txRawBytes,
-		},
-	}
-
-	// Create a list with one transaction
-	req := connect.NewRequest(&submit.SubmitTxRequest{
-		Tx: []*submit.AnyChainTx{tx},
-	})
-	client.AddHeadersToRequest(req)
-
+func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
 	fmt.Println("Connecting to utxorpc host:", client.URL())
-	resp, err := client.Submit.SubmitTx(ctx, req)
+	resp, err := client.SubmitTx(txCbor)
 	if err != nil {
 		if connectErr, ok := err.(*connect.Error); ok {
 			// Extract error details
 			errorCode := connectErr.Code()
 			errorMessage := connectErr.Error()
 			grpcMessage := connectErr.Meta().Get("Grpc-Message")
-			return nil, fmt.Errorf(
+			return "", fmt.Errorf(
 				"gRPC error occurred:\n  Code: %v\n  Message: %s\n  Details: %s",
 				errorCode,
 				errorMessage,
 				grpcMessage,
 			)
 		}
-		return nil, fmt.Errorf("unexpected error occurred: %w", err)
+		return "", fmt.Errorf("unexpected error occurred: %w", err)
 	}
 
 	// Extract and return transaction references
@@ -98,49 +80,30 @@ func submitTx(ctx context.Context, client *utxorpc.UtxorpcClient, txCbor string)
 			refs = append(refs, hexRef)
 			fmt.Printf("  Ref[%d]: %s\n", i, hexRef)
 		}
-		return refs, nil
+		return refs[0], nil
 	}
 
-	fmt.Println("No references found in the response.")
-	return nil, nil
+	return "", fmt.Errorf("No references found in the response.")
 }
 
-func readMempool(ctx context.Context, client *utxorpc.UtxorpcClient) {
-	req := connect.NewRequest(&submit.ReadMempoolRequest{})
-	client.AddHeadersToRequest(req)
-	fmt.Println("Connecting to utxorpc host:", client.URL())
-	resp, err := client.Submit.ReadMempool(ctx, req)
+func readMempool(client *utxorpc.UtxorpcClient) {
+	resp, err := client.ReadMempool()
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
 	fmt.Printf("Response: %+v\n", resp)
 }
 
-func waitForTx(ctx context.Context, client *utxorpc.UtxorpcClient, txRefs []string) error {
-	fmt.Println("Waiting for the following transaction references:")
-	for _, ref := range txRefs {
-		fmt.Printf("  TxRef: %s\n", ref)
-	}
-
-	// Decode the transaction references from hex
-	var decodedRefs [][]byte
-	for _, ref := range txRefs {
-		refBytes, err := hex.DecodeString(ref)
-		if err != nil {
-			return fmt.Errorf("failed to decode transaction reference %s: %w", ref, err)
-		}
-		decodedRefs = append(decodedRefs, refBytes)
-	}
-
-	// Create a WaitForTxRequest with the decoded transaction references
-	req := connect.NewRequest(&submit.WaitForTxRequest{
-		Ref: decodedRefs,
-	})
-	client.AddHeadersToRequest(req)
+func waitForTx(
+	client *utxorpc.UtxorpcClient,
+	txRef string,
+) error {
+	fmt.Println("Waiting for the following transaction reference:")
+	fmt.Printf("  TxRef: %s\n", txRef)
 
 	fmt.Println("Connecting to utxorpc host:", client.URL())
 	// Open a streaming connection to wait for transaction confirmation
-	stream, err := client.Submit.WaitForTx(ctx, req)
+	stream, err := client.WaitForTx(txRef)
 	if err != nil {
 		return fmt.Errorf("failed to open waitForTx stream: %w", err)
 	}
@@ -169,11 +132,9 @@ func waitForTx(ctx context.Context, client *utxorpc.UtxorpcClient, txRefs []stri
 	return nil
 }
 
-func watchMempool(ctx context.Context, client *utxorpc.UtxorpcClient) {
-	req := connect.NewRequest(&submit.WatchMempoolRequest{})
-	client.AddHeadersToRequest(req)
+func watchMempool(client *utxorpc.UtxorpcClient) {
 	fmt.Println("Connecting to utxorpc host:", client.URL())
-	stream, err := client.Submit.WatchMempool(ctx, req)
+	stream, err := client.WatchMempool()
 	if err != nil {
 		utxorpc.HandleError(err)
 	}

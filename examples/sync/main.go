@@ -1,85 +1,46 @@
 package main
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
+	"os"
 
-	"connectrpc.com/connect"
 	sync "github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
 	utxorpc "github.com/utxorpc/go-sdk"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func main() {
-	ctx := context.Background()
-	baseUrl := "https://preview.utxorpc-v0.demeter.run"
-	client := utxorpc.CreateUtxoRPCClient(baseUrl,
-		// set API key for demeter
-		utxorpc.WithHeaders(map[string]string{
-			"dmtr-api-key": "dmtr_utxorpc1...",
-		}),
-	)
-
-	// Set mode to "fetchBlock" or "followTip" to select the desired example.
-	var mode string = "followTip"
-
-	switch mode {
-	case "fetchBlock":
-		fetchBlock(ctx, client, "235f9a217b826276d6cdfbb05c11572a06aef092535b6df8c682d501af59c230", 65017558, nil)
-	case "followTip":
-		followTip(ctx, client, "235f9a217b826276d6cdfbb05c11572a06aef092535b6df8c682d501af59c230", 65017558, nil)
-	default:
-		fmt.Println("Unknown mode:", mode)
+	baseUrl := os.Getenv("UTXORPC_URL")
+	if baseUrl == "" {
+		baseUrl = "https://preview.utxorpc-v0.demeter.run"
 	}
+	client := utxorpc.NewClient(utxorpc.WithBaseUrl(baseUrl))
+	dmtrApiKey := os.Getenv("DMTR_API_KEY")
+	// set API key for demeter
+	if dmtrApiKey != "" {
+		client.SetHeader("dmtr-api-key", "dmtr_apikey...")
+	}
+
+	// Run them all
+	fetchBlock(
+		client,
+		"235f9a217b826276d6cdfbb05c11572a06aef092535b6df8c682d501af59c230",
+		65017558,
+	)
+	followTip(
+		client,
+		"235f9a217b826276d6cdfbb05c11572a06aef092535b6df8c682d501af59c230",
+		65017558,
+	)
 }
 
-func fetchBlock(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash string, blockIndex int64, fieldMaskPaths []string) {
-	var req *connect.Request[sync.FetchBlockRequest]
-	var intersect []*sync.BlockRef
-	var fieldMask *fieldmaskpb.FieldMask
-
-	// Construct the BlockRef based on the provided parameters
-	blockRef := &sync.BlockRef{}
-	if blockHash != "" {
-		hash, err := hex.DecodeString(blockHash)
-		if err != nil {
-			log.Fatalf("failed to decode hex string: %v", err)
-		}
-		blockRef.Hash = hash
-	}
-	// We assume blockIndex can be 0 or any positive number
-	if blockIndex > -1 {
-		blockRef.Index = uint64(blockIndex)
-	}
-
-	// Only add blockRef to intersect if at least one of blockHash or blockIndex is provided
-	if blockHash != "" || blockIndex > -1 {
-		intersect = []*sync.BlockRef{blockRef}
-	}
-
-	// Construct the FieldMask if paths are provided
-	if len(fieldMaskPaths) > 0 {
-		fieldMask = &fieldmaskpb.FieldMask{
-			Paths: fieldMaskPaths,
-		}
-	}
-
-	// Create the FetchBlockRequest
-	req = connect.NewRequest(&sync.FetchBlockRequest{
-		Ref: intersect,
-		FieldMask: fieldMask,
-	})
-
-	// Print BlockRef details if intersect is provided
-	if len(intersect) > 0 {
-		fmt.Printf("Blockref: %d, %x\n", req.Msg.Ref[0].Index, req.Msg.Ref[0].Hash)
-	}
-
-	client.AddHeadersToRequest(req)
+func fetchBlock(
+	client *utxorpc.UtxorpcClient,
+	blockHash string,
+	blockIndex int64,
+) {
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	resp, err := client.Sync.FetchBlock(ctx, req)
+	resp, err := client.FetchBlock(blockHash, blockIndex)
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
@@ -91,51 +52,13 @@ func fetchBlock(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash st
 	}
 }
 
-func followTip(ctx context.Context, client *utxorpc.UtxorpcClient, blockHash string, blockIndex int64, fieldMaskPaths []string) {
-	var req *connect.Request[sync.FollowTipRequest]
-	var intersect []*sync.BlockRef
-	var fieldMask *fieldmaskpb.FieldMask
-
-	// Construct the BlockRef based on the provided parameters
-	blockRef := &sync.BlockRef{}
-	if blockHash != "" {
-		hash, err := hex.DecodeString(blockHash)
-		if err != nil {
-			log.Fatalf("failed to decode hex string: %v", err)
-		}
-		blockRef.Hash = hash
-	}
-	// We assume blockIndex can be 0 or any positive number
-	if blockIndex > -1 {
-		blockRef.Index = uint64(blockIndex)
-	}
-
-	// Only add blockRef to intersect if at least one of blockHash or blockIndex is provided
-	if blockHash != "" || blockIndex > -1 {
-		intersect = []*sync.BlockRef{blockRef}
-	}
-
-	// Construct the FieldMask if paths are provided
-	if len(fieldMaskPaths) > 0 {
-		fieldMask = &fieldmaskpb.FieldMask{
-			Paths: fieldMaskPaths,
-		}
-	}
-
-	// Create the FollowTipRequest
-	req = connect.NewRequest(&sync.FollowTipRequest{
-		Intersect: intersect,
-		FieldMask: fieldMask,
-	})
-
-	// Print BlockRef details if intersect is provided
-	if len(intersect) > 0 {
-		fmt.Printf("Blockref: %d, %x\n", req.Msg.Intersect[0].Index, req.Msg.Intersect[0].Hash)
-	}
-
-	client.AddHeadersToRequest(req)
+func followTip(
+	client *utxorpc.UtxorpcClient,
+	blockHash string,
+	blockIndex int64,
+) {
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	stream, err := client.Sync.FollowTip(ctx, req)
+	stream, err := client.FollowTip(blockHash, blockIndex)
 	if err != nil {
 		utxorpc.HandleError(err)
 		return

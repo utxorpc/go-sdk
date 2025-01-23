@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"log"
+	"os"
 
-	"connectrpc.com/connect"
 	"github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
@@ -16,96 +14,75 @@ import (
 )
 
 func main() {
-
-	ctx := context.Background()
-	baseUrl := "https://preview.utxorpc-v0.demeter.run"
-	// set API key for demeter
-	client := utxorpc.CreateUtxoRPCClient(baseUrl,
-		// set API key for demeter
-		utxorpc.WithHeaders(map[string]string{
-			"dmtr-api-key": "dmtr_apikey...",
-		}),
-	)
-
-	// Set mode to "readParams", "readUtxos", "searchUtxos" to select the desired example.
-	var mode string = "searchUtxos"
-
-	switch mode {
-	case "readParams":
-		readParams(ctx, client)
-	case "readUtxos":
-		// readUtxos(ctx, client, "71a7498f086d378ec5e558581286629b678be1dd65d5d4e2a5d634ba6fdf8299", 0)
-		// readUtxos(ctx, client, "791309b6b0facc80b3fa896e830999e7bef321ea5279f6bedbe1279ee1e9d4ae", 1)
-		readUtxos(ctx, client, "24efe5f12d1d93bb419cfb84338d6602dfe78c614b489edb72df0594a077431c", 0)
-	case "searchUtxos":
-		// searchUtxos(ctx, client, "addr_test1qzrkvcfvd7k5jx54xxkz87p8xn88304jd2g4jsa0hwwmg20k3c7k36lsg8rdupz6e36j5ctzs6lzjymc9vw7djrmgdnqff9z6j", "", "")
-		// https://preprod.cexplorer.io/asset/asset1tvkt35str8aeepuflxmnjzcdj87em8xrlx4ehz
-		// Use policy ID and asset name in hex format (https://cips.cardano.org/cip/CIP-68/)
-		// Hunt
-		searchUtxos(ctx, client, "addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt", "63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5", "0014df1048554e54")
-		// Dedi
-		searchUtxos(ctx, client, "addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt", "63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5", "0014df1044454449")
-		// No assets
-		searchUtxos(ctx, client, "addr_test1qzrkvcfvd7k5jx54xxkz87p8xn88304jd2g4jsa0hwwmg20k3c7k36lsg8rdupz6e36j5ctzs6lzjymc9vw7djrmgdnqff9z6j", "63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5", "0014df1044454449")
-	default:
-		fmt.Println("Unknown mode:", mode)
+	baseUrl := os.Getenv("UTXORPC_URL")
+	if baseUrl == "" {
+		baseUrl = "https://preview.utxorpc-v0.demeter.run"
 	}
+	client := utxorpc.NewClient(utxorpc.WithBaseUrl(baseUrl))
+	dmtrApiKey := os.Getenv("DMTR_API_KEY")
+	// set API key for demeter
+	if dmtrApiKey != "" {
+		client.SetHeader("dmtr-api-key", "dmtr_apikey...")
+	}
+
+	// Run them all
+	readParams(client)
+	readUtxo(
+		client,
+		"24efe5f12d1d93bb419cfb84338d6602dfe78c614b489edb72df0594a077431c",
+		0,
+	)
+	// https://preprod.cexplorer.io/asset/asset1tvkt35str8aeepuflxmnjzcdj87em8xrlx4ehz
+	// Use policy ID and asset name in hex format (https://cips.cardano.org/cip/CIP-68/)
+	// Hunt
+	searchUtxos(
+		client,
+		"addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt",
+		"63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5",
+		"0014df1048554e54",
+	)
+	// Dedi
+	searchUtxos(
+		client,
+		"addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt",
+		"63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5",
+		"0014df1044454449",
+	)
+	// No assets
+	searchUtxos(
+		client,
+		"addr_test1qzrkvcfvd7k5jx54xxkz87p8xn88304jd2g4jsa0hwwmg20k3c7k36lsg8rdupz6e36j5ctzs6lzjymc9vw7djrmgdnqff9z6j",
+		"63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5",
+		"0014df1044454449",
+	)
 }
 
-func readParams(ctx context.Context, client *utxorpc.UtxorpcClient) {
-	req := connect.NewRequest(&query.ReadParamsRequest{})
-	client.AddHeadersToRequest(req)
-
+func readParams(client *utxorpc.UtxorpcClient) {
 	fmt.Println("Connecting to utxorpc host:", client.URL())
-	resp, err := client.Query.ReadParams(ctx, req)
+	resp, err := client.ReadParams()
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
 	fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.LedgerTip != nil {
-		fmt.Printf("Ledger Tip: Slot: %d, Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
+		fmt.Printf(
+			"Ledger Tip: Slot: %d, Hash: %x\n",
+			resp.Msg.LedgerTip.Slot,
+			resp.Msg.LedgerTip.Hash,
+		)
 	}
 	if resp.Msg.Values != nil {
 		fmt.Printf("Cardano: %+v\n", resp.Msg.Values)
 	}
 }
 
-func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr string, txIndex uint32) {
-	var txHashBytes []byte
-	var err error
-
-	// Attempt to decode the input as hex
-	txHashBytes, err = hex.DecodeString(txHashStr)
-	if err == nil {
-		log.Printf("Input txHashStr decoded from hex.")
-	} else {
-		// If not hex, attempt to decode as Base64
-		txHashBytes, err = base64.StdEncoding.DecodeString(txHashStr)
-		if err == nil {
-			log.Printf("Input txHashStr decoded from Base64.")
-		} else {
-			log.Printf("Input txHashStr is neither valid hex nor Base64.")
-			fmt.Println("Error: txHashStr must be a valid hexadecimal or Base64 string.")
-			return
-		}
-	}
-
-	// Create TxoRef with the decoded hash bytes
-	txoRef := &query.TxoRef{
-		Hash:  txHashBytes, // Use the decoded []byte
-		Index: txIndex,
-	}
-
-	// Prepare the request
-	req := connect.NewRequest(&query.ReadUtxosRequest{
-		Keys: []*query.TxoRef{txoRef},
-	})
-	client.AddHeadersToRequest(req)
-	fmt.Println("Connecting to utxorpc host:", client.URL())
-
-	// Send the request
-	resp, err := client.Query.ReadUtxos(ctx, req)
+func readUtxo(
+	client *utxorpc.UtxorpcClient,
+	txHashStr string,
+	txIndex uint32,
+) {
+	resp, err := client.ReadUtxo(txHashStr, txIndex)
 	if err != nil {
 		utxorpc.HandleError(err)
 		return
@@ -115,7 +92,11 @@ func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr str
 	fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.LedgerTip != nil {
-		fmt.Printf("Ledger Tip:\n  Slot: %d\n  Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
+		fmt.Printf(
+			"Ledger Tip:\n  Slot: %d\n  Hash: %x\n",
+			resp.Msg.LedgerTip.Slot,
+			resp.Msg.LedgerTip.Hash,
+		)
 	}
 
 	for _, item := range resp.Msg.Items {
@@ -134,7 +115,12 @@ func readUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, txHashStr str
 	}
 }
 
-func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress string, policyID string, assetName string) {
+func searchUtxos(
+	client *utxorpc.UtxorpcClient,
+	rawAddress string,
+	policyID string,
+	assetName string,
+) {
 	// Use to support bech32/base58 addresses
 	addr, err := common.NewAddress(rawAddress)
 	if err != nil {
@@ -208,11 +194,8 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 		StartToken: "",  // For pagination; empty for the first page
 	}
 
-	req := connect.NewRequest(searchRequest)
-	client.AddHeadersToRequest(req)
-
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	resp, err := client.Query.SearchUtxos(ctx, req)
+	resp, err := client.SearchUtxos(searchRequest)
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
@@ -221,7 +204,11 @@ func searchUtxos(ctx context.Context, client *utxorpc.UtxorpcClient, rawAddress 
 	// fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.LedgerTip != nil {
-		fmt.Printf("Ledger Tip:\n  Slot: %d\n  Hash: %x\n", resp.Msg.LedgerTip.Slot, resp.Msg.LedgerTip.Hash)
+		fmt.Printf(
+			"Ledger Tip:\n  Slot: %d\n  Hash: %x\n",
+			resp.Msg.LedgerTip.Slot,
+			resp.Msg.LedgerTip.Hash,
+		)
 	}
 
 	for _, item := range resp.Msg.Items {

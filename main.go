@@ -8,10 +8,6 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query/queryconnect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit/submitconnect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync/syncconnect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/watch/watchconnect"
 	"golang.org/x/net/http2"
 )
 
@@ -19,38 +15,62 @@ type UtxorpcClient struct {
 	httpClient connect.HTTPClient
 	baseUrl    string
 	headers    map[string]string
-	Query      queryconnect.QueryServiceClient
-	Submit     submitconnect.SubmitServiceClient
-	Sync       syncconnect.SyncServiceClient
-	Watch      watchconnect.WatchServiceClient
+	Query      QueryServiceClient
+	Submit     SubmitServiceClient
+	Sync       SyncServiceClient
+	Watch      WatchServiceClient
 }
 
 type ClientOption func(*UtxorpcClient)
 
-func WithHeaders(headers map[string]string) ClientOption {
-	return func(client *UtxorpcClient) {
-		client.headers = headers
+func WithBaseUrl(baseUrl string) ClientOption {
+	return func(u *UtxorpcClient) {
+		u.baseUrl = baseUrl
 	}
 }
 
-func NewClient(httpClient *http.Client, baseUrl string, options ...ClientOption) *UtxorpcClient {
-	client := &UtxorpcClient{
-		httpClient: httpClient,
-		baseUrl:    baseUrl,
-		Query:      queryconnect.NewQueryServiceClient(httpClient, baseUrl, connect.WithGRPC()),
-		Submit:     submitconnect.NewSubmitServiceClient(httpClient, baseUrl, connect.WithGRPC()),
-		Sync:       syncconnect.NewSyncServiceClient(httpClient, baseUrl, connect.WithGRPC()),
-		Watch:      watchconnect.NewWatchServiceClient(httpClient, baseUrl, connect.WithGRPC()),
+func WithHeaders(headers map[string]string) ClientOption {
+	return func(u *UtxorpcClient) {
+		u.headers = headers
 	}
+}
+
+func WithHttpClient(httpClient connect.HTTPClient) ClientOption {
+	return func(u *UtxorpcClient) {
+		u.httpClient = httpClient
+	}
+}
+
+func NewClient(options ...ClientOption) *UtxorpcClient {
+	u := &UtxorpcClient{}
 
 	for _, option := range options {
-		option(client)
+		option(u)
 	}
-	return client
+	if u.httpClient == nil {
+		u.httpClient = createHttpClient()
+	}
+	u.Query = u.NewQueryServiceClient()
+	u.Submit = u.NewSubmitServiceClient()
+	u.Sync = u.NewSyncServiceClient()
+	u.Watch = u.NewWatchServiceClient()
+	return u
+}
+
+func (u *UtxorpcClient) reset() {
+	u.Query = u.NewQueryServiceClient()
+	u.Submit = u.NewSubmitServiceClient()
+	u.Sync = u.NewSyncServiceClient()
+	u.Watch = u.NewWatchServiceClient()
 }
 
 func (u *UtxorpcClient) HTTPClient() connect.HTTPClient {
 	return u.httpClient
+}
+
+func (u *UtxorpcClient) SetURL(baseUrl string) {
+	u.baseUrl = baseUrl
+	u.reset()
 }
 
 func (u *UtxorpcClient) URL() string {
@@ -73,17 +93,15 @@ func createHttpClient() *http.Client {
 				// Establish a TLS connection using the custom TLS configuration
 				conn, err := tls.Dial(network, addr, tlsConfig)
 				if err != nil {
-					return nil, fmt.Errorf("failed to establish TLS connection: %w", err)
+					return nil, fmt.Errorf(
+						"failed to establish TLS connection: %w",
+						err,
+					)
 				}
 				return conn, nil
 			},
 		},
 	}
-}
-
-func CreateUtxoRPCClient(baseUrl string, options ...ClientOption) *UtxorpcClient {
-	httpClient := createHttpClient()
-	return NewClient(httpClient, baseUrl, options...)
 }
 
 func (u *UtxorpcClient) Headers() map[string]string {
