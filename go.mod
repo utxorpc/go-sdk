@@ -7,13 +7,14 @@ go 1.22.11
 
 require (
 	connectrpc.com/connect v1.18.1
-	github.com/blinklabs-io/gouroboros v0.108.0
+	github.com/blinklabs-io/gouroboros v0.108.2
 	github.com/utxorpc/go-codegen v0.16.0
 	golang.org/x/net v0.34.0
 	google.golang.org/protobuf v1.36.4
 )
 
 require (
+	github.com/btcsuite/btcd/btcutil v1.1.6 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
