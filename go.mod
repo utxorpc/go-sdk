@@ -10,7 +10,7 @@ require (
 	github.com/blinklabs-io/gouroboros v0.108.2
 	github.com/utxorpc/go-codegen v0.16.0
 	golang.org/x/net v0.34.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 )
 
 require (
