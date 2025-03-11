@@ -9,7 +9,7 @@ require (
 	connectrpc.com/connect v1.18.1
 	github.com/blinklabs-io/gouroboros v0.113.1
 	github.com/utxorpc/go-codegen v0.16.0
-	golang.org/x/net v0.35.0
+	golang.org/x/net v0.37.0
 	google.golang.org/protobuf v1.36.5
 )
 
