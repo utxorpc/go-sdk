@@ -1,0 +1,32 @@
+issues:
+  exclude-dirs:
+    - docs
+  max-issues-per-linter: 0
+  max-same-issues: 0
+linters:
+  disable:
+    - depguard
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # Defaults above ours below
+    - copyloopvar
+    - usestdlibvars
+    - whitespace
+  presets:
+    - bugs
+    - format
+    - import
+    - performance
+    - unused
+#linters-settings:
+#  errcheck:
+#    check-type-assertions: true
+run:
+  issues-exit-code: 1
+  tests: false
+  timeout: 10m

@@ -34,7 +34,8 @@ func watchIntersect(blockHashStr string, blockIndex int64) []*watch.BlockRef {
 		}
 		blockRef.Hash = hash
 	}
-	// We assume blockIndex can be 0 or any positive number
+	// We assume blockIndex can be 0 or any positive number, and won't overflow
+	// #nosec G115
 	if blockIndex > -1 {
 		blockRef.Index = uint64(blockIndex)
 	}
