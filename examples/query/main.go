@@ -65,15 +65,15 @@ func readParams(client *utxorpc.UtxorpcClient) {
 	}
 	fmt.Printf("Response: %+v\n", resp)
 
-	if resp.Msg.LedgerTip != nil {
+	if resp.Msg.GetLedgerTip() != nil {
 		fmt.Printf(
 			"Ledger Tip: Slot: %d, Hash: %x\n",
-			resp.Msg.LedgerTip.Slot,
-			resp.Msg.LedgerTip.Hash,
+			resp.Msg.GetLedgerTip().GetSlot(),
+			resp.Msg.GetLedgerTip().GetHash(),
 		)
 	}
-	if resp.Msg.Values != nil {
-		fmt.Printf("Cardano: %+v\n", resp.Msg.Values)
+	if resp.Msg.GetValues() != nil {
+		fmt.Printf("Cardano: %+v\n", resp.Msg.GetValues())
 	}
 }
 
@@ -91,25 +91,25 @@ func readUtxo(
 	// Process the response
 	fmt.Printf("Response: %+v\n", resp)
 
-	if resp.Msg.LedgerTip != nil {
+	if resp.Msg.GetLedgerTip() != nil {
 		fmt.Printf(
 			"Ledger Tip:\n  Slot: %d\n  Hash: %x\n",
-			resp.Msg.LedgerTip.Slot,
-			resp.Msg.LedgerTip.Hash,
+			resp.Msg.GetLedgerTip().GetSlot(),
+			resp.Msg.GetLedgerTip().GetHash(),
 		)
 	}
 
-	for _, item := range resp.Msg.Items {
+	for _, item := range resp.Msg.GetItems() {
 		fmt.Println("UTxO Data:")
-		fmt.Printf("  Tx Hash: %x\n", item.TxoRef.Hash)
-		fmt.Printf("  Output Index: %d\n", item.TxoRef.Index)
-		fmt.Printf("  Native Bytes: %x\n", item.NativeBytes)
+		fmt.Printf("  Tx Hash: %x\n", item.GetTxoRef().GetHash())
+		fmt.Printf("  Output Index: %d\n", item.GetTxoRef().GetIndex())
+		fmt.Printf("  Native Bytes: %x\n", item.GetNativeBytes())
 		if cardano := item.GetCardano(); cardano != nil {
 			fmt.Println("  Cardano UTxO:")
-			fmt.Printf("    Address: %x\n", cardano.Address)
-			fmt.Printf("    Coin: %d\n", cardano.Coin)
-			if cardano.Datum != nil {
-				fmt.Printf("    Datum Hash: %x\n", cardano.Datum.Hash)
+			fmt.Printf("    Address: %x\n", cardano.GetAddress())
+			fmt.Printf("    Coin: %d\n", cardano.GetCoin())
+			if cardano.GetDatum() != nil {
+				fmt.Printf("    Datum Hash: %x\n", cardano.GetDatum().GetHash())
 			}
 		}
 	}
@@ -203,30 +203,30 @@ func searchUtxos(
 	// Uncomment to print the full response for debugging
 	// fmt.Printf("Response: %+v\n", resp)
 
-	if resp.Msg.LedgerTip != nil {
+	if resp.Msg.GetLedgerTip() != nil {
 		fmt.Printf(
 			"Ledger Tip:\n  Slot: %d\n  Hash: %x\n",
-			resp.Msg.LedgerTip.Slot,
-			resp.Msg.LedgerTip.Hash,
+			resp.Msg.GetLedgerTip().GetSlot(),
+			resp.Msg.GetLedgerTip().GetHash(),
 		)
 	}
 
-	for _, item := range resp.Msg.Items {
+	for _, item := range resp.Msg.GetItems() {
 		fmt.Println("UTxO Data:")
-		fmt.Printf("  Tx Hash: %x\n", item.TxoRef.Hash)
-		fmt.Printf("  Output Index: %d\n", item.TxoRef.Index)
-		fmt.Printf("  Native Bytes: %x\n", item.NativeBytes)
+		fmt.Printf("  Tx Hash: %x\n", item.GetTxoRef().GetHash())
+		fmt.Printf("  Output Index: %d\n", item.GetTxoRef().GetIndex())
+		fmt.Printf("  Native Bytes: %x\n", item.GetNativeBytes())
 		if cardano := item.GetCardano(); cardano != nil {
 			fmt.Println("  Cardano UTxO:")
-			fmt.Printf("    Address: %x\n", cardano.Address)
-			fmt.Printf("    Coin: %d\n", cardano.Coin)
+			fmt.Printf("    Address: %x\n", cardano.GetAddress())
+			fmt.Printf("    Coin: %d\n", cardano.GetCoin())
 			fmt.Println("    Assets:")
-			for _, multiasset := range cardano.Assets {
-				fmt.Printf("      Policy ID: %x\n", multiasset.PolicyId)
-				for _, asset := range multiasset.Assets {
-					fmt.Printf("        Asset Name: %s\n", string(asset.Name))
-					fmt.Printf("        Output Coin: %d\n", asset.OutputCoin)
-					fmt.Printf("        Mint Coin: %d\n", asset.MintCoin)
+			for _, multiasset := range cardano.GetAssets() {
+				fmt.Printf("      Policy ID: %x\n", multiasset.GetPolicyId())
+				for _, asset := range multiasset.GetAssets() {
+					fmt.Printf("        Asset Name: %s\n", string(asset.GetName()))
+					fmt.Printf("        Output Coin: %d\n", asset.GetOutputCoin())
+					fmt.Printf("        Mint Coin: %d\n", asset.GetMintCoin())
 				}
 			}
 		}

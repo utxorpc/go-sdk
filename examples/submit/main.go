@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 
@@ -23,7 +24,7 @@ func main() {
 	}
 
 	// Set mode to "submitTx", "readMempool", "waitForTx", or "watchMempool" to select the desired example.
-	var mode string = "readMempool"
+	mode := "readMempool"
 
 	switch mode {
 	case "submitTx":
@@ -56,7 +57,8 @@ func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
 	fmt.Println("Connecting to utxorpc host:", client.URL())
 	resp, err := client.SubmitTx(txCbor)
 	if err != nil {
-		if connectErr, ok := err.(*connect.Error); ok {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
 			// Extract error details
 			errorCode := connectErr.Code()
 			errorMessage := connectErr.Error()
@@ -75,7 +77,7 @@ func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
 	if resp != nil && resp.Msg.Ref != nil {
 		var refs []string
 		fmt.Println("Response:")
-		for i, ref := range resp.Msg.Ref {
+		for i, ref := range resp.Msg.GetRef() {
 			hexRef := hex.EncodeToString(ref)
 			refs = append(refs, hexRef)
 			fmt.Printf("  Ref[%d]: %s\n", i, hexRef)
@@ -83,7 +85,7 @@ func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
 		return refs[0], nil
 	}
 
-	return "", fmt.Errorf("No references found in the response.")
+	return "", errors.New("no references found in the response")
 }
 
 func readMempool(client *utxorpc.UtxorpcClient) {
@@ -114,8 +116,8 @@ func waitForTx(
 		resp := stream.Msg()
 
 		// Decode and print the received stage and reference
-		txRef := hex.EncodeToString(resp.Ref)
-		txStage := resp.Stage
+		txRef := hex.EncodeToString(resp.GetRef())
+		txStage := resp.GetStage()
 		fmt.Printf("Transaction %s is at stage: %v\n", txRef, txStage)
 
 		// Break if the desired stage is reached (e.g., confirmed)

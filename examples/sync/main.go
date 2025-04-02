@@ -45,7 +45,7 @@ func fetchBlock(
 		utxorpc.HandleError(err)
 	}
 	fmt.Printf("Response: %+v\n", resp)
-	for i, blockRef := range resp.Msg.Block {
+	for i, blockRef := range resp.Msg.GetBlock() {
 		fmt.Printf("Block[%d]:\n", i)
 		fmt.Printf("Index: %d\n", blockRef.GetCardano().GetHeader().GetSlot())
 		fmt.Printf("Hash: %x\n", blockRef.GetCardano().GetHeader().GetHash())
@@ -95,8 +95,8 @@ func printAnyChainBlock(block *sync.AnyChainBlock) {
 		return
 	}
 	if cardanoBlock := block.GetCardano(); cardanoBlock != nil {
-		hash := hex.EncodeToString(cardanoBlock.Header.Hash)
-		slot := cardanoBlock.Header.Slot
+		hash := hex.EncodeToString(cardanoBlock.GetHeader().GetHash())
+		slot := cardanoBlock.GetHeader().GetSlot()
 		fmt.Printf("Block Slot: %d, Block Hash: %s\n", slot, hash)
 	}
 }
@@ -105,7 +105,7 @@ func printBlockRef(blockRef *sync.BlockRef) {
 	if blockRef == nil {
 		return
 	}
-	hash := hex.EncodeToString(blockRef.Hash)
-	slot := blockRef.Index
+	hash := hex.EncodeToString(blockRef.GetHash())
+	slot := blockRef.GetIndex()
 	fmt.Printf("Block Slot: %d, Block Hash: %s\n", slot, hash)
 }
