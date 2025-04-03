@@ -18,7 +18,7 @@ func main() {
 	dmtrApiKey := os.Getenv("DMTR_API_KEY")
 	// set API key for demeter
 	if dmtrApiKey != "" {
-		client.SetHeader("dmtr-api-key", "dmtr_apikey...")
+		client.SetHeader("dmtr-api-key", dmtrApiKey)
 	}
 
 	// Run them all
