@@ -55,6 +55,10 @@ func main() {
 		"63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5",
 		"0014df1044454449",
 	)
+	getUtxosByAddress(
+		client,
+		"addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt",
+	)
 }
 
 func readParams(client *utxorpc.UtxorpcClient) {
@@ -196,6 +200,59 @@ func searchUtxos(
 
 	fmt.Println("connecting to utxorpc host:", client.URL())
 	resp, err := client.SearchUtxos(searchRequest)
+	if err != nil {
+		utxorpc.HandleError(err)
+	}
+
+	// Uncomment to print the full response for debugging
+	// fmt.Printf("Response: %+v\n", resp)
+
+	if resp.Msg.GetLedgerTip() != nil {
+		fmt.Printf(
+			"Ledger Tip:\n  Slot: %d\n  Hash: %x\n",
+			resp.Msg.GetLedgerTip().GetSlot(),
+			resp.Msg.GetLedgerTip().GetHash(),
+		)
+	}
+
+	for _, item := range resp.Msg.GetItems() {
+		fmt.Println("UTxO Data:")
+		fmt.Printf("  Tx Hash: %x\n", item.GetTxoRef().GetHash())
+		fmt.Printf("  Output Index: %d\n", item.GetTxoRef().GetIndex())
+		fmt.Printf("  Native Bytes: %x\n", item.GetNativeBytes())
+		if cardano := item.GetCardano(); cardano != nil {
+			fmt.Println("  Cardano UTxO:")
+			fmt.Printf("    Address: %x\n", cardano.GetAddress())
+			fmt.Printf("    Coin: %d\n", cardano.GetCoin())
+			fmt.Println("    Assets:")
+			for _, multiasset := range cardano.GetAssets() {
+				fmt.Printf("      Policy ID: %x\n", multiasset.GetPolicyId())
+				for _, asset := range multiasset.GetAssets() {
+					fmt.Printf("        Asset Name: %s\n", string(asset.GetName()))
+					fmt.Printf("        Output Coin: %d\n", asset.GetOutputCoin())
+					fmt.Printf("        Mint Coin: %d\n", asset.GetMintCoin())
+				}
+			}
+		}
+	}
+}
+
+func getUtxosByAddress(
+	client *utxorpc.UtxorpcClient,
+	rawAddress string,
+) {
+	// Use to support bech32/base58 addresses
+	addr, err := common.NewAddress(rawAddress)
+	if err != nil {
+		log.Fatalf("failed to create address: %v", err)
+	}
+	addrCbor, err := addr.MarshalCBOR()
+	if err != nil {
+		log.Fatalf("failed to marshal address to CBOR: %v", err)
+	}
+
+	fmt.Println("connecting to utxorpc host:", client.URL())
+	resp, err := client.GetUtxosByAddress(addrCbor)
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
