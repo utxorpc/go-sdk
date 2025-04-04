@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 
 	"connectrpc.com/connect"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query/queryconnect"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 type QueryServiceClient queryconnect.QueryServiceClient
@@ -95,4 +97,28 @@ func (u *UtxorpcClient) SearchUtxosWithContext(
 	req := connect.NewRequest(queryReq)
 	u.AddHeadersToRequest(req)
 	return u.Query.SearchUtxos(ctx, req)
+}
+
+// Helpers
+
+func (u *UtxorpcClient) GetUtxosByAddress(
+	address []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
+	queryReq := &query.SearchUtxosRequest{
+		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
+		Predicate: &query.UtxoPredicate{
+			Match: &query.AnyUtxoPattern{
+				UtxoPattern: &query.AnyUtxoPattern_Cardano{
+					Cardano: &cardano.TxOutputPattern{
+						Address: &cardano.AddressPattern{
+							ExactAddress: address,
+						},
+					},
+				},
+			},
+		},
+		MaxItems:   100, // May need adjustment
+		StartToken: "",  // For pagination, start at first page
+	}
+	return u.SearchUtxos(queryReq)
 }
