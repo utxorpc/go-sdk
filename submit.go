@@ -20,6 +20,39 @@ func (u *UtxorpcClient) NewSubmitServiceClient() SubmitServiceClient {
 	)
 }
 
+func (u *UtxorpcClient) EvalTx(
+	txCbor string,
+) (*connect.Response[submit.EvalTxResponse], error) {
+	ctx := context.Background()
+	// Decode the transaction data from hex
+	txRawBytes, err := hex.DecodeString(txCbor)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode transaction hash: %w", err)
+	}
+
+	// Create a EvalTxRequest with the transaction data
+	tx := &submit.AnyChainTx{
+		Type: &submit.AnyChainTx_Raw{
+			Raw: txRawBytes,
+		},
+	}
+
+	// Create a list with one transaction
+	req := &submit.EvalTxRequest{
+		Tx: []*submit.AnyChainTx{tx},
+	}
+	return u.EvalTxWithContext(ctx, req)
+}
+
+func (u *UtxorpcClient) EvalTxWithContext(
+	ctx context.Context,
+	txReq *submit.EvalTxRequest,
+) (*connect.Response[submit.EvalTxResponse], error) {
+	req := connect.NewRequest(txReq)
+	u.AddHeadersToRequest(req)
+	return u.Submit.EvalTx(ctx, req)
+}
+
 func (u *UtxorpcClient) ReadMempool() (*connect.Response[submit.ReadMempoolResponse], error) {
 	ctx := context.Background()
 	return u.ReadMempoolWithContext(ctx)
