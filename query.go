@@ -30,6 +30,22 @@ func (u *UtxorpcClient) QueryService() QueryServiceClient {
 	return u.Query
 }
 
+func (u *UtxorpcClient) ReadData(
+	req *query.ReadDataRequest,
+) (*connect.Response[query.ReadDataResponse], error) {
+	ctx := context.Background()
+	return u.ReadDataWithContext(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadDataWithContext(
+	ctx context.Context,
+	queryReq *query.ReadDataRequest,
+) (*connect.Response[query.ReadDataResponse], error) {
+	req := connect.NewRequest(queryReq)
+	u.AddHeadersToRequest(req)
+	return u.Query.ReadData(ctx, req)
+}
+
 func (u *UtxorpcClient) ReadParams() (*connect.Response[query.ReadParamsResponse], error) {
 	ctx := context.Background()
 	return u.ReadParamsWithContext(ctx)
