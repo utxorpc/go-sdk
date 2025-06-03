@@ -43,30 +43,6 @@ func (u *UtxorpcClient) ReadParamsWithContext(
 	return u.Query.ReadParams(ctx, req)
 }
 
-func (u *UtxorpcClient) ReadUtxo(
-	txHashStr string,
-	txIndex uint32,
-) (*connect.Response[query.ReadUtxosResponse], error) {
-	var txHashBytes []byte
-	var err error
-	// Attempt to decode the input as hex
-	txHashBytes, hexErr := hex.DecodeString(txHashStr)
-	if hexErr != nil {
-		// If not hex, attempt to decode as Base64
-		txHashBytes, err = base64.StdEncoding.DecodeString(txHashStr)
-		if err != nil {
-			return nil, err
-		}
-	}
-	// Create TxoRef with the decoded hash bytes
-	txoRef := &query.TxoRef{
-		Hash:  txHashBytes, // Use the decoded []byte
-		Index: txIndex,
-	}
-	req := &query.ReadUtxosRequest{Keys: []*query.TxoRef{txoRef}}
-	return u.ReadUtxos(req)
-}
-
 func (u *UtxorpcClient) ReadUtxos(
 	req *query.ReadUtxosRequest,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
@@ -100,6 +76,30 @@ func (u *UtxorpcClient) SearchUtxosWithContext(
 }
 
 // Helpers
+
+func (u *UtxorpcClient) GetUtxoByRef(
+	txHashStr string,
+	txIndex uint32,
+) (*connect.Response[query.ReadUtxosResponse], error) {
+	var txHashBytes []byte
+	var err error
+	// Attempt to decode the input as hex
+	txHashBytes, hexErr := hex.DecodeString(txHashStr)
+	if hexErr != nil {
+		// If not hex, attempt to decode as Base64
+		txHashBytes, err = base64.StdEncoding.DecodeString(txHashStr)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// Create TxoRef with the decoded hash bytes
+	txoRef := &query.TxoRef{
+		Hash:  txHashBytes, // Use the decoded []byte
+		Index: txIndex,
+	}
+	req := &query.ReadUtxosRequest{Keys: []*query.TxoRef{txoRef}}
+	return u.ReadUtxos(req)
+}
 
 func (u *UtxorpcClient) GetUtxosByAddress(
 	address []byte,
