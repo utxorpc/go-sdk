@@ -86,7 +86,7 @@ func readUtxo(
 	txHashStr string,
 	txIndex uint32,
 ) {
-	resp, err := client.ReadUtxo(txHashStr, txIndex)
+	resp, err := client.GetUtxoByRef(txHashStr, txIndex)
 	if err != nil {
 		utxorpc.HandleError(err)
 		return
