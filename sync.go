@@ -89,13 +89,13 @@ func (u *UtxorpcClient) FollowTipWithContext(
 	return u.Sync.FollowTip(ctx, req)
 }
 
-func (u *UtxorpcClient) ReadTip() (*ChainPoint, error) {
+func (u *UtxorpcClient) ReadTip() (*connect.Response[sync.ReadTipResponse], error) {
 	return u.ReadTipWithContext(context.Background())
 }
 
 func (u *UtxorpcClient) ReadTipWithContext(
 	ctx context.Context,
-) (*ChainPoint, error) {
+) (*connect.Response[sync.ReadTipResponse], error) {
 
 	readTipReqProto := &sync.ReadTipRequest{}
 	reqReadTip := connect.NewRequest(readTipReqProto)
@@ -108,7 +108,20 @@ func (u *UtxorpcClient) ReadTipWithContext(
 	if tipResp.Msg == nil || tipResp.Msg.GetTip() == nil {
 		return nil, errors.New("received nil tip from ReadTipResponse")
 	}
-	blockRef := tipResp.Msg.GetTip()
+
+	return tipResp, nil
+}
+
+func (u *UtxorpcClient) ReadBlock(
+	blockRef *sync.BlockRef,
+) (*connect.Response[sync.FetchBlockResponse], error) {
+	return u.ReadBlockWithContext(context.Background(), blockRef)
+}
+
+func (u *UtxorpcClient) ReadBlockWithContext(
+	ctx context.Context,
+	blockRef *sync.BlockRef,
+) (*connect.Response[sync.FetchBlockResponse], error) {
 
 	fetchBlockReqProto := &sync.FetchBlockRequest{Ref: []*sync.BlockRef{blockRef}}
 	reqFetchBlock := connect.NewRequest(fetchBlockReqProto)
@@ -123,24 +136,15 @@ func (u *UtxorpcClient) ReadTipWithContext(
 	}
 
 	anyChainBlock := blockRespFull.Msg.GetBlock()[0]
-	var height uint64
 
 	switch chain := anyChainBlock.GetChain().(type) {
 	case *sync.AnyChainBlock_Cardano:
 		if chain.Cardano != nil && chain.Cardano.GetHeader() != nil {
-			height = chain.Cardano.GetHeader().GetHeight()
+			return blockRespFull, nil
 		} else {
 			return nil, errors.New("cardano block or header is nil in FetchBlock response for tip")
 		}
 	default:
 		return nil, fmt.Errorf("unknown or unsupported chain type in FetchBlock response: %T", chain)
 	}
-
-	chainPoint := &ChainPoint{
-		Slot:   blockRef.GetIndex(),
-		Hash:   hex.EncodeToString(blockRef.GetHash()),
-		Height: height,
-	}
-
-	return chainPoint, nil
 }
