@@ -3,6 +3,8 @@ package sdk
 import (
 	"context"
 	"encoding/hex"
+	"errors"
+	"fmt"
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
@@ -10,6 +12,11 @@ import (
 )
 
 type SyncServiceClient syncconnect.SyncServiceClient
+type ChainPoint struct {
+	Slot   uint64
+	Hash   string
+	Height uint64
+}
 
 func NewSyncServiceClient(u *UtxorpcClient) SyncServiceClient {
 	return u.NewSyncServiceClient()
@@ -80,4 +87,60 @@ func (u *UtxorpcClient) FollowTipWithContext(
 	req := connect.NewRequest(blockReq)
 	u.AddHeadersToRequest(req)
 	return u.Sync.FollowTip(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadTip() (*ChainPoint, error) {
+	return u.ReadTipWithContext(context.Background())
+}
+
+func (u *UtxorpcClient) ReadTipWithContext(
+	ctx context.Context,
+) (*ChainPoint, error) {
+
+	readTipReqProto := &sync.ReadTipRequest{}
+	reqReadTip := connect.NewRequest(readTipReqProto)
+	u.AddHeadersToRequest(reqReadTip)
+
+	tipResp, err := u.Sync.ReadTip(ctx, reqReadTip)
+	if err != nil {
+		return nil, fmt.Errorf("ReadTip RPC call failed: %w", err)
+	}
+	if tipResp.Msg == nil || tipResp.Msg.GetTip() == nil {
+		return nil, errors.New("received nil tip from ReadTipResponse")
+	}
+	blockRef := tipResp.Msg.GetTip()
+
+	fetchBlockReqProto := &sync.FetchBlockRequest{Ref: []*sync.BlockRef{blockRef}}
+	reqFetchBlock := connect.NewRequest(fetchBlockReqProto)
+	u.AddHeadersToRequest(reqFetchBlock)
+
+	blockRespFull, err := u.Sync.FetchBlock(ctx, reqFetchBlock)
+	if err != nil {
+		return nil, fmt.Errorf("FetchBlock RPC call for tip failed: %w", err)
+	}
+	if blockRespFull.Msg == nil || len(blockRespFull.Msg.GetBlock()) == 0 || blockRespFull.Msg.GetBlock()[0] == nil {
+		return nil, errors.New("received nil or empty block data from FetchBlockResponse for tip")
+	}
+
+	anyChainBlock := blockRespFull.Msg.GetBlock()[0]
+	var height uint64
+
+	switch chain := anyChainBlock.GetChain().(type) {
+	case *sync.AnyChainBlock_Cardano:
+		if chain.Cardano != nil && chain.Cardano.GetHeader() != nil {
+			height = chain.Cardano.GetHeader().GetHeight()
+		} else {
+			return nil, errors.New("cardano block or header is nil in FetchBlock response for tip")
+		}
+	default:
+		return nil, fmt.Errorf("unknown or unsupported chain type in FetchBlock response: %T", chain)
+	}
+
+	chainPoint := &ChainPoint{
+		Slot:   blockRef.GetIndex(),
+		Hash:   hex.EncodeToString(blockRef.GetHash()),
+		Height: height,
+	}
+
+	return chainPoint, nil
 }
