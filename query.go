@@ -61,36 +61,16 @@ func (u *UtxorpcClient) ReadUtxosWithContext(
 }
 
 func (u *UtxorpcClient) SearchUtxos(
-	predicate *query.UtxoPredicate,
-	maxItems int32,
-	startToken string,
-	fieldMask *fieldmaskpb.FieldMask,
+	req *query.SearchUtxosRequest,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
 	ctx := context.Background()
-	queryReq := &query.SearchUtxosRequest{
-		Predicate:  predicate,
-		MaxItems:   maxItems,
-		StartToken: startToken,
-		FieldMask:  fieldMask,
-	}
-	req := connect.NewRequest(queryReq)
-	u.AddHeadersToRequest(req)
-	return u.Query.SearchUtxos(ctx, req)
+	return u.SearchUtxosWithContext(ctx, req)
 }
 
 func (u *UtxorpcClient) SearchUtxosWithContext(
 	ctx context.Context,
-	predicate *query.UtxoPredicate,
-	maxItems int32,
-	startToken string,
-	fieldMask *fieldmaskpb.FieldMask,
+	queryReq *query.SearchUtxosRequest,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	queryReq := &query.SearchUtxosRequest{
-		Predicate:  predicate,
-		MaxItems:   maxItems,
-		StartToken: startToken,
-		FieldMask:  fieldMask,
-	}
 	req := connect.NewRequest(queryReq)
 	u.AddHeadersToRequest(req)
 	return u.Query.SearchUtxos(ctx, req)
@@ -101,30 +81,33 @@ func (u *UtxorpcClient) SearchUtxosWithContext(
 func (u *UtxorpcClient) GetUtxoByRef(
 	txHashStr string,
 	txIndex uint32,
-	ctx ...context.Context,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	return u.GetUtxoByRefWithContext(context.Background(), txHashStr, txIndex)
+}
 
+func (u *UtxorpcClient) GetUtxoByRefWithContext(
+	ctx context.Context,
+	txHashStr string,
+	txIndex uint32,
+) (*connect.Response[query.ReadUtxosResponse], error) {
 	var txHashBytes []byte
 	var err error
+	// Attempt to decode the input as hex
 	txHashBytes, hexErr := hex.DecodeString(txHashStr)
 	if hexErr != nil {
+		// If not hex, attempt to decode as Base64
 		txHashBytes, err = base64.StdEncoding.DecodeString(txHashStr)
 		if err != nil {
 			return nil, err
 		}
 	}
+	// Create TxoRef with the decoded hash bytes
 	txoRef := &query.TxoRef{
-		Hash:  txHashBytes,
+		Hash:  txHashBytes, // Use the decoded []byte
 		Index: txIndex,
 	}
 	req := &query.ReadUtxosRequest{Keys: []*query.TxoRef{txoRef}}
-	return u.ReadUtxosWithContext(ctxToUse, req)
+	return u.ReadUtxosWithContext(ctx, req)
 }
 
 type TxoReference struct {
@@ -135,15 +118,15 @@ type TxoReference struct {
 func (u *UtxorpcClient) GetUtxosByRefs(
 	refs []TxoReference,
 	batchSize *int,
-	ctx ...context.Context,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	return u.GetUtxosByRefsWithContext(context.Background(), refs, batchSize)
+}
 
+func (u *UtxorpcClient) GetUtxosByRefsWithContext(
+	ctx context.Context,
+	refs []TxoReference,
+	batchSize *int,
+) (*connect.Response[query.ReadUtxosResponse], error) {
 	if len(refs) == 0 {
 		return nil, errors.New("no transaction references provided")
 	}
@@ -169,7 +152,7 @@ func (u *UtxorpcClient) GetUtxosByRefs(
 
 	if len(allTxoRefs) <= defaultBatchSize {
 		req := &query.ReadUtxosRequest{Keys: allTxoRefs}
-		return u.ReadUtxosWithContext(ctxToUse, req)
+		return u.ReadUtxosWithContext(ctx, req)
 	}
 
 	var allResults []*query.AnyUtxoData
@@ -182,7 +165,7 @@ func (u *UtxorpcClient) GetUtxosByRefs(
 		batch := allTxoRefs[i:end]
 		req := &query.ReadUtxosRequest{Keys: batch}
 
-		resp, err := u.ReadUtxosWithContext(ctxToUse, req)
+		resp, err := u.ReadUtxosWithContext(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -201,65 +184,49 @@ func (u *UtxorpcClient) GetUtxosByRefs(
 
 func (u *UtxorpcClient) GetUtxosByAddress(
 	address []byte,
-	maxItems *int32,
-	startToken *string,
-	ctx ...context.Context,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	return u.GetUtxosByAddressWithContext(context.Background(), address)
+}
 
-	items := int32(100)
-	if maxItems != nil {
-		items = *maxItems
-	}
+func (u *UtxorpcClient) GetUtxosByAddressWithContext(
+	ctx context.Context,
+	address []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
 
-	token := ""
-	if startToken != nil {
-		token = *startToken
-	}
-
-	predicate := &query.UtxoPredicate{
-		Match: &query.AnyUtxoPattern{
-			UtxoPattern: &query.AnyUtxoPattern_Cardano{
-				Cardano: &cardano.TxOutputPattern{
-					Address: &cardano.AddressPattern{
-						ExactAddress: address,
+	queryReq := &query.SearchUtxosRequest{
+		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
+		Predicate: &query.UtxoPredicate{
+			Match: &query.AnyUtxoPattern{
+				UtxoPattern: &query.AnyUtxoPattern_Cardano{
+					Cardano: &cardano.TxOutputPattern{
+						Address: &cardano.AddressPattern{
+							ExactAddress: address,
+						},
 					},
 				},
 			},
 		},
+		MaxItems:   100, // May need adjustment
+		StartToken: "",  // For pagination, start at first page
 	}
-	fieldMask := &fieldmaskpb.FieldMask{Paths: []string{}}
-	return u.SearchUtxosWithContext(ctxToUse, predicate, items, token, fieldMask)
+
+	return u.SearchUtxosWithContext(ctx, queryReq)
 }
 
 func (u *UtxorpcClient) GetUtxosByAddressWithAsset(
 	addressBytes []byte,
 	policyIdBytes []byte,
 	assetNameBytes []byte,
-	maxItems *int32,
-	startToken *string,
-	ctx ...context.Context,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	return u.GetUtxosByAddressWithAssetWithContext(context.Background(), addressBytes, policyIdBytes, assetNameBytes)
+}
 
-	items := int32(100)
-	if maxItems != nil && *maxItems > 0 {
-		items = *maxItems
-	}
-	token := ""
-	if startToken != nil {
-		token = *startToken
-	}
+func (u *UtxorpcClient) GetUtxosByAddressWithAssetWithContext(
+	ctx context.Context,
+	addressBytes []byte,
+	policyIdBytes []byte,
+	assetNameBytes []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
 
 	tpl := &cardano.TxOutputPattern{
 		Address: &cardano.AddressPattern{
@@ -288,43 +255,36 @@ func (u *UtxorpcClient) GetUtxosByAddressWithAsset(
 		tpl.Asset = assetFilter
 	}
 
-	predicate := &query.UtxoPredicate{
-		Match: &query.AnyUtxoPattern{
-			UtxoPattern: &query.AnyUtxoPattern_Cardano{
-				Cardano: tpl,
+	queryReq := &query.SearchUtxosRequest{
+		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
+		Predicate: &query.UtxoPredicate{
+			Match: &query.AnyUtxoPattern{
+				UtxoPattern: &query.AnyUtxoPattern_Cardano{
+					Cardano: tpl,
+				},
 			},
 		},
+		MaxItems:   100, // May need adjustment
+		StartToken: "",  // For pagination, start at first page
 	}
 
-	return u.SearchUtxosWithContext(ctxToUse, predicate, items, token, nil)
+	return u.SearchUtxosWithContext(ctx, queryReq)
 }
 
 func (u *UtxorpcClient) GetUtxosByAsset(
 	policyIdBytes []byte,
 	assetNameBytes []byte,
-	maxItems *int32,
-	startToken *string,
-	ctx ...context.Context,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	return u.GetUtxosByAssetWithContext(context.Background(), policyIdBytes, assetNameBytes)
+}
 
+func (u *UtxorpcClient) GetUtxosByAssetWithContext(
+	ctx context.Context,
+	policyIdBytes []byte,
+	assetNameBytes []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
 	if policyIdBytes == nil && assetNameBytes == nil {
 		return nil, errors.New("at least one of policyId or assetName must be provided")
-	}
-
-	items := int32(100)
-	if maxItems != nil {
-		items = *maxItems
-	}
-
-	token := ""
-	if startToken != nil {
-		token = *startToken
 	}
 
 	assetPattern := &cardano.AssetPattern{}
@@ -344,12 +304,18 @@ func (u *UtxorpcClient) GetUtxosByAsset(
 		cardanoOutputPattern.Asset = assetPattern
 	}
 
-	predicate := &query.UtxoPredicate{
-		Match: &query.AnyUtxoPattern{
-			UtxoPattern: &query.AnyUtxoPattern_Cardano{
-				Cardano: cardanoOutputPattern,
+	queryReq := &query.SearchUtxosRequest{
+		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
+		Predicate: &query.UtxoPredicate{
+			Match: &query.AnyUtxoPattern{
+				UtxoPattern: &query.AnyUtxoPattern_Cardano{
+					Cardano: cardanoOutputPattern,
+				},
 			},
 		},
+		MaxItems:   100, // May need adjustment
+		StartToken: "",  // For pagination, start at first page
 	}
-	return u.SearchUtxosWithContext(ctxToUse, predicate, items, token, nil)
+
+	return u.SearchUtxosWithContext(ctx, queryReq)
 }
