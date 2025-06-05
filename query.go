@@ -138,7 +138,6 @@ func (u *UtxorpcClient) GetUtxosByAddressWithContext(
 	ctx context.Context,
 	address []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-
 	queryReq := &query.SearchUtxosRequest{
 		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
 		Predicate: &query.UtxoPredicate{
@@ -173,7 +172,6 @@ func (u *UtxorpcClient) GetUtxosByAddressWithAssetWithContext(
 	policyIdBytes []byte,
 	assetNameBytes []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-
 	tpl := &cardano.TxOutputPattern{
 		Address: &cardano.AddressPattern{
 			ExactAddress: addressBytes,

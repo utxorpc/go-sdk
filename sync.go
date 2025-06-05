@@ -12,11 +12,6 @@ import (
 )
 
 type SyncServiceClient syncconnect.SyncServiceClient
-type ChainPoint struct {
-	Slot   uint64
-	Hash   string
-	Height uint64
-}
 
 func NewSyncServiceClient(u *UtxorpcClient) SyncServiceClient {
 	return u.NewSyncServiceClient()
@@ -96,14 +91,13 @@ func (u *UtxorpcClient) ReadTip() (*connect.Response[sync.ReadTipResponse], erro
 func (u *UtxorpcClient) ReadTipWithContext(
 	ctx context.Context,
 ) (*connect.Response[sync.ReadTipResponse], error) {
-
 	readTipReqProto := &sync.ReadTipRequest{}
 	reqReadTip := connect.NewRequest(readTipReqProto)
 	u.AddHeadersToRequest(reqReadTip)
 
 	tipResp, err := u.Sync.ReadTip(ctx, reqReadTip)
 	if err != nil {
-		return nil, fmt.Errorf("ReadTip RPC call failed: %w", err)
+		return nil, fmt.Errorf("failed to read tip: %w", err)
 	}
 	if tipResp.Msg == nil || tipResp.Msg.GetTip() == nil {
 		return nil, errors.New("received nil tip from ReadTipResponse")
@@ -122,14 +116,13 @@ func (u *UtxorpcClient) ReadBlockWithContext(
 	ctx context.Context,
 	blockRef *sync.BlockRef,
 ) (*connect.Response[sync.FetchBlockResponse], error) {
-
 	fetchBlockReqProto := &sync.FetchBlockRequest{Ref: []*sync.BlockRef{blockRef}}
 	reqFetchBlock := connect.NewRequest(fetchBlockReqProto)
 	u.AddHeadersToRequest(reqFetchBlock)
 
 	blockRespFull, err := u.Sync.FetchBlock(ctx, reqFetchBlock)
 	if err != nil {
-		return nil, fmt.Errorf("FetchBlock RPC call for tip failed: %w", err)
+		return nil, fmt.Errorf("failed to fetch block for tip: %w", err)
 	}
 	if blockRespFull.Msg == nil || len(blockRespFull.Msg.GetBlock()) == 0 || blockRespFull.Msg.GetBlock()[0] == nil {
 		return nil, errors.New("received nil or empty block data from FetchBlockResponse for tip")
