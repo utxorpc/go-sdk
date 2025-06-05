@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
@@ -97,6 +98,14 @@ func (u *UtxorpcClient) GetUtxoByRef(
 	txHashStr string,
 	txIndex uint32,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
+	return u.GetUtxoByRefWithContext(context.Background(), txHashStr, txIndex)
+}
+
+func (u *UtxorpcClient) GetUtxoByRefWithContext(
+	ctx context.Context,
+	txHashStr string,
+	txIndex uint32,
+) (*connect.Response[query.ReadUtxosResponse], error) {
 	var txHashBytes []byte
 	var err error
 	// Attempt to decode the input as hex
@@ -114,10 +123,35 @@ func (u *UtxorpcClient) GetUtxoByRef(
 		Index: txIndex,
 	}
 	req := &query.ReadUtxosRequest{Keys: []*query.TxoRef{txoRef}}
-	return u.ReadUtxos(req)
+	return u.ReadUtxosWithContext(ctx, req)
+}
+
+func (u *UtxorpcClient) GetUtxosByRefs(
+	refs []*query.TxoRef,
+) (*connect.Response[query.ReadUtxosResponse], error) {
+	return u.GetUtxosByRefsWithContext(context.Background(), refs)
+}
+
+func (u *UtxorpcClient) GetUtxosByRefsWithContext(
+	ctx context.Context,
+	refs []*query.TxoRef,
+) (*connect.Response[query.ReadUtxosResponse], error) {
+	if len(refs) == 0 {
+		return nil, errors.New("no transaction references provided")
+	}
+
+	req := &query.ReadUtxosRequest{Keys: refs}
+	return u.ReadUtxosWithContext(ctx, req)
 }
 
 func (u *UtxorpcClient) GetUtxosByAddress(
+	address []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
+	return u.GetUtxosByAddressWithContext(context.Background(), address)
+}
+
+func (u *UtxorpcClient) GetUtxosByAddressWithContext(
+	ctx context.Context,
 	address []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
 	queryReq := &query.SearchUtxosRequest{
@@ -136,5 +170,112 @@ func (u *UtxorpcClient) GetUtxosByAddress(
 		MaxItems:   100, // May need adjustment
 		StartToken: "",  // For pagination, start at first page
 	}
-	return u.SearchUtxos(queryReq)
+
+	return u.SearchUtxosWithContext(ctx, queryReq)
+}
+
+func (u *UtxorpcClient) GetUtxosByAddressWithAsset(
+	addressBytes []byte,
+	policyIdBytes []byte,
+	assetNameBytes []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
+	return u.GetUtxosByAddressWithAssetWithContext(context.Background(), addressBytes, policyIdBytes, assetNameBytes)
+}
+
+func (u *UtxorpcClient) GetUtxosByAddressWithAssetWithContext(
+	ctx context.Context,
+	addressBytes []byte,
+	policyIdBytes []byte,
+	assetNameBytes []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
+	tpl := &cardano.TxOutputPattern{
+		Address: &cardano.AddressPattern{
+			ExactAddress: addressBytes,
+		},
+	}
+
+	var assetFilter *cardano.AssetPattern
+
+	if len(policyIdBytes) > 0 && len(assetNameBytes) > 0 {
+		assetFilter = &cardano.AssetPattern{
+			PolicyId:  policyIdBytes,
+			AssetName: assetNameBytes,
+		}
+	} else if len(policyIdBytes) > 0 {
+		assetFilter = &cardano.AssetPattern{
+			PolicyId: policyIdBytes,
+		}
+	} else if len(assetNameBytes) > 0 {
+		assetFilter = &cardano.AssetPattern{
+			AssetName: assetNameBytes,
+		}
+	}
+
+	if assetFilter != nil {
+		tpl.Asset = assetFilter
+	}
+
+	queryReq := &query.SearchUtxosRequest{
+		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
+		Predicate: &query.UtxoPredicate{
+			Match: &query.AnyUtxoPattern{
+				UtxoPattern: &query.AnyUtxoPattern_Cardano{
+					Cardano: tpl,
+				},
+			},
+		},
+		MaxItems:   100, // May need adjustment
+		StartToken: "",  // For pagination, start at first page
+	}
+
+	return u.SearchUtxosWithContext(ctx, queryReq)
+}
+
+func (u *UtxorpcClient) GetUtxosByAsset(
+	policyIdBytes []byte,
+	assetNameBytes []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
+	return u.GetUtxosByAssetWithContext(context.Background(), policyIdBytes, assetNameBytes)
+}
+
+func (u *UtxorpcClient) GetUtxosByAssetWithContext(
+	ctx context.Context,
+	policyIdBytes []byte,
+	assetNameBytes []byte,
+) (*connect.Response[query.SearchUtxosResponse], error) {
+	if policyIdBytes == nil && assetNameBytes == nil {
+		return nil, errors.New("at least one of policyId or assetName must be provided")
+	}
+
+	assetPattern := &cardano.AssetPattern{}
+	hasAssetFilter := false
+	if policyIdBytes != nil {
+		assetPattern.PolicyId = policyIdBytes
+		hasAssetFilter = true
+	}
+	if assetNameBytes != nil {
+		assetPattern.AssetName = assetNameBytes
+		hasAssetFilter = true
+	}
+
+	cardanoOutputPattern := &cardano.TxOutputPattern{}
+
+	if hasAssetFilter {
+		cardanoOutputPattern.Asset = assetPattern
+	}
+
+	queryReq := &query.SearchUtxosRequest{
+		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
+		Predicate: &query.UtxoPredicate{
+			Match: &query.AnyUtxoPattern{
+				UtxoPattern: &query.AnyUtxoPattern_Cardano{
+					Cardano: cardanoOutputPattern,
+				},
+			},
+		},
+		MaxItems:   100, // May need adjustment
+		StartToken: "",  // For pagination, start at first page
+	}
+
+	return u.SearchUtxosWithContext(ctx, queryReq)
 }

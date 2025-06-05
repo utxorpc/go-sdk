@@ -3,6 +3,8 @@ package sdk
 import (
 	"context"
 	"encoding/hex"
+	"errors"
+	"fmt"
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
@@ -80,4 +82,62 @@ func (u *UtxorpcClient) FollowTipWithContext(
 	req := connect.NewRequest(blockReq)
 	u.AddHeadersToRequest(req)
 	return u.Sync.FollowTip(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadTip() (*connect.Response[sync.ReadTipResponse], error) {
+	return u.ReadTipWithContext(context.Background())
+}
+
+func (u *UtxorpcClient) ReadTipWithContext(
+	ctx context.Context,
+) (*connect.Response[sync.ReadTipResponse], error) {
+	readTipReqProto := &sync.ReadTipRequest{}
+	reqReadTip := connect.NewRequest(readTipReqProto)
+	u.AddHeadersToRequest(reqReadTip)
+
+	tipResp, err := u.Sync.ReadTip(ctx, reqReadTip)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read tip: %w", err)
+	}
+	if tipResp.Msg == nil || tipResp.Msg.GetTip() == nil {
+		return nil, errors.New("received nil tip from ReadTipResponse")
+	}
+
+	return tipResp, nil
+}
+
+func (u *UtxorpcClient) ReadBlock(
+	blockRef *sync.BlockRef,
+) (*connect.Response[sync.FetchBlockResponse], error) {
+	return u.ReadBlockWithContext(context.Background(), blockRef)
+}
+
+func (u *UtxorpcClient) ReadBlockWithContext(
+	ctx context.Context,
+	blockRef *sync.BlockRef,
+) (*connect.Response[sync.FetchBlockResponse], error) {
+	fetchBlockReqProto := &sync.FetchBlockRequest{Ref: []*sync.BlockRef{blockRef}}
+	reqFetchBlock := connect.NewRequest(fetchBlockReqProto)
+	u.AddHeadersToRequest(reqFetchBlock)
+
+	blockRespFull, err := u.Sync.FetchBlock(ctx, reqFetchBlock)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch block for tip: %w", err)
+	}
+	if blockRespFull.Msg == nil || len(blockRespFull.Msg.GetBlock()) == 0 || blockRespFull.Msg.GetBlock()[0] == nil {
+		return nil, errors.New("received nil or empty block data from FetchBlockResponse for tip")
+	}
+
+	anyChainBlock := blockRespFull.Msg.GetBlock()[0]
+
+	switch chain := anyChainBlock.GetChain().(type) {
+	case *sync.AnyChainBlock_Cardano:
+		if chain.Cardano != nil && chain.Cardano.GetHeader() != nil {
+			return blockRespFull, nil
+		} else {
+			return nil, errors.New("cardano block or header is nil in FetchBlock response for tip")
+		}
+	default:
+		return nil, fmt.Errorf("unknown or unsupported chain type in FetchBlock response: %T", chain)
+	}
 }
