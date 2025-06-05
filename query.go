@@ -110,76 +110,22 @@ func (u *UtxorpcClient) GetUtxoByRefWithContext(
 	return u.ReadUtxosWithContext(ctx, req)
 }
 
-type TxoReference struct {
-	TxHash string
-	Index  uint32
-}
-
 func (u *UtxorpcClient) GetUtxosByRefs(
-	refs []TxoReference,
-	batchSize *int,
+	refs []*query.TxoRef,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
-	return u.GetUtxosByRefsWithContext(context.Background(), refs, batchSize)
+	return u.GetUtxosByRefsWithContext(context.Background(), refs)
 }
 
 func (u *UtxorpcClient) GetUtxosByRefsWithContext(
 	ctx context.Context,
-	refs []TxoReference,
-	batchSize *int,
+	refs []*query.TxoRef,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
 	if len(refs) == 0 {
 		return nil, errors.New("no transaction references provided")
 	}
 
-	defaultBatchSize := 100
-	if batchSize != nil && *batchSize > 0 {
-		defaultBatchSize = *batchSize
-	}
-
-	allTxoRefs := make([]*query.TxoRef, 0, len(refs))
-	for _, ref := range refs {
-		var txHashBytes []byte
-		txHashBytes, err := hex.DecodeString(ref.TxHash)
-		if err != nil {
-			return nil, err
-		}
-		txoRef := &query.TxoRef{
-			Hash:  txHashBytes,
-			Index: ref.Index,
-		}
-		allTxoRefs = append(allTxoRefs, txoRef)
-	}
-
-	if len(allTxoRefs) <= defaultBatchSize {
-		req := &query.ReadUtxosRequest{Keys: allTxoRefs}
-		return u.ReadUtxosWithContext(ctx, req)
-	}
-
-	var allResults []*query.AnyUtxoData
-	for i := 0; i < len(allTxoRefs); i += defaultBatchSize {
-		end := i + defaultBatchSize
-		if end > len(allTxoRefs) {
-			end = len(allTxoRefs)
-		}
-
-		batch := allTxoRefs[i:end]
-		req := &query.ReadUtxosRequest{Keys: batch}
-
-		resp, err := u.ReadUtxosWithContext(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-
-		if resp.Msg != nil && resp.Msg.Items != nil {
-			allResults = append(allResults, resp.Msg.Items...)
-		}
-	}
-
-	aggregatedResponse := &query.ReadUtxosResponse{
-		Items: allResults,
-	}
-
-	return connect.NewResponse(aggregatedResponse), nil
+	req := &query.ReadUtxosRequest{Keys: refs}
+	return u.ReadUtxosWithContext(ctx, req)
 }
 
 func (u *UtxorpcClient) GetUtxosByAddress(
