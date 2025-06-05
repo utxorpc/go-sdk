@@ -22,14 +22,8 @@ func (u *UtxorpcClient) NewSubmitServiceClient() SubmitServiceClient {
 
 func (u *UtxorpcClient) EvalTx(
 	txCbor string,
-	ctx ...context.Context,
 ) (*connect.Response[submit.EvalTxResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	ctx := context.Background()
 	// Decode the transaction data from hex
 	txRawBytes, err := hex.DecodeString(txCbor)
 	if err != nil {
@@ -47,7 +41,7 @@ func (u *UtxorpcClient) EvalTx(
 	req := &submit.EvalTxRequest{
 		Tx: []*submit.AnyChainTx{tx},
 	}
-	return u.EvalTxWithContext(ctxToUse, req)
+	return u.EvalTxWithContext(ctx, req)
 }
 
 func (u *UtxorpcClient) EvalTxWithContext(
@@ -59,14 +53,9 @@ func (u *UtxorpcClient) EvalTxWithContext(
 	return u.Submit.EvalTx(ctx, req)
 }
 
-func (u *UtxorpcClient) ReadMempool(ctx ...context.Context) (*connect.Response[submit.ReadMempoolResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
-	return u.ReadMempoolWithContext(ctxToUse)
+func (u *UtxorpcClient) ReadMempool() (*connect.Response[submit.ReadMempoolResponse], error) {
+	ctx := context.Background()
+	return u.ReadMempoolWithContext(ctx)
 }
 
 func (u *UtxorpcClient) ReadMempoolWithContext(
@@ -79,14 +68,8 @@ func (u *UtxorpcClient) ReadMempoolWithContext(
 
 func (u *UtxorpcClient) SubmitTx(
 	txCbor string,
-	ctx ...context.Context,
 ) (*connect.Response[submit.SubmitTxResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	ctx := context.Background()
 	// Decode the transaction data from hex
 	txRawBytes, err := hex.DecodeString(txCbor)
 	if err != nil {
@@ -104,7 +87,7 @@ func (u *UtxorpcClient) SubmitTx(
 	req := &submit.SubmitTxRequest{
 		Tx: []*submit.AnyChainTx{tx},
 	}
-	return u.SubmitTxWithContext(ctxToUse, req)
+	return u.SubmitTxWithContext(ctx, req)
 }
 
 func (u *UtxorpcClient) SubmitTxWithContext(
@@ -118,14 +101,8 @@ func (u *UtxorpcClient) SubmitTxWithContext(
 
 func (u *UtxorpcClient) WaitForTx(
 	txRef string,
-	ctx ...context.Context,
 ) (*connect.ServerStreamForClient[submit.WaitForTxResponse], error) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
+	ctx := context.Background()
 	// Decode the transaction references from hex
 	var decodedRefs [][]byte
 	refBytes, err := hex.DecodeString(txRef)
@@ -142,7 +119,7 @@ func (u *UtxorpcClient) WaitForTx(
 	req := &submit.WaitForTxRequest{
 		Ref: decodedRefs,
 	}
-	return u.WaitForTxWithContext(ctxToUse, req)
+	return u.WaitForTxWithContext(ctx, req)
 }
 
 func (u *UtxorpcClient) WaitForTxWithContext(
@@ -154,17 +131,12 @@ func (u *UtxorpcClient) WaitForTxWithContext(
 	return u.Submit.WaitForTx(ctx, req)
 }
 
-func (u *UtxorpcClient) WatchMempool(ctx ...context.Context) (
+func (u *UtxorpcClient) WatchMempool() (
 	*connect.ServerStreamForClient[submit.WatchMempoolResponse],
 	error,
 ) {
-	var ctxToUse context.Context
-	if len(ctx) > 0 && ctx[0] != nil {
-		ctxToUse = ctx[0]
-	} else {
-		ctxToUse = context.Background()
-	}
-	return u.WatchMempoolWithContext(ctxToUse)
+	ctx := context.Background()
+	return u.WatchMempoolWithContext(ctx)
 }
 
 func (u *UtxorpcClient) WatchMempoolWithContext(ctx context.Context) (
