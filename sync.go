@@ -71,7 +71,9 @@ func (u *UtxorpcClient) FollowTip(
 	blockIndex int64,
 ) (*connect.ServerStreamForClient[sync.FollowTipResponse], error) {
 	ctx := context.Background()
-	req := &sync.FollowTipRequest{Intersect: syncIntersect(blockHashStr, blockIndex)}
+	req := &sync.FollowTipRequest{
+		Intersect: syncIntersect(blockHashStr, blockIndex),
+	}
 	return u.FollowTipWithContext(ctx, req)
 }
 
@@ -116,7 +118,9 @@ func (u *UtxorpcClient) ReadBlockWithContext(
 	ctx context.Context,
 	blockRef *sync.BlockRef,
 ) (*connect.Response[sync.FetchBlockResponse], error) {
-	fetchBlockReqProto := &sync.FetchBlockRequest{Ref: []*sync.BlockRef{blockRef}}
+	fetchBlockReqProto := &sync.FetchBlockRequest{
+		Ref: []*sync.BlockRef{blockRef},
+	}
 	reqFetchBlock := connect.NewRequest(fetchBlockReqProto)
 	u.AddHeadersToRequest(reqFetchBlock)
 
@@ -124,8 +128,11 @@ func (u *UtxorpcClient) ReadBlockWithContext(
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch block for tip: %w", err)
 	}
-	if blockRespFull.Msg == nil || len(blockRespFull.Msg.GetBlock()) == 0 || blockRespFull.Msg.GetBlock()[0] == nil {
-		return nil, errors.New("received nil or empty block data from FetchBlockResponse for tip")
+	if blockRespFull.Msg == nil || len(blockRespFull.Msg.GetBlock()) == 0 ||
+		blockRespFull.Msg.GetBlock()[0] == nil {
+		return nil, errors.New(
+			"received nil or empty block data from FetchBlockResponse for tip",
+		)
 	}
 
 	anyChainBlock := blockRespFull.Msg.GetBlock()[0]
