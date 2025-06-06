@@ -51,7 +51,9 @@ func (u *UtxorpcClient) WatchTx(
 	blockIndex int64,
 ) (*connect.ServerStreamForClient[watch.WatchTxResponse], error) {
 	ctx := context.Background()
-	req := &watch.WatchTxRequest{Intersect: watchIntersect(blockHashStr, blockIndex)}
+	req := &watch.WatchTxRequest{
+		Intersect: watchIntersect(blockHashStr, blockIndex),
+	}
 	return u.WatchTxWithContext(ctx, req)
 }
 

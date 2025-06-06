@@ -228,8 +228,14 @@ func searchUtxos(
 			for _, multiasset := range cardano.GetAssets() {
 				fmt.Printf("      Policy ID: %x\n", multiasset.GetPolicyId())
 				for _, asset := range multiasset.GetAssets() {
-					fmt.Printf("        Asset Name: %s\n", string(asset.GetName()))
-					fmt.Printf("        Output Coin: %d\n", asset.GetOutputCoin())
+					fmt.Printf(
+						"        Asset Name: %s\n",
+						string(asset.GetName()),
+					)
+					fmt.Printf(
+						"        Output Coin: %d\n",
+						asset.GetOutputCoin(),
+					)
 					fmt.Printf("        Mint Coin: %d\n", asset.GetMintCoin())
 				}
 			}
@@ -281,8 +287,14 @@ func getUtxosByAddress(
 			for _, multiasset := range cardano.GetAssets() {
 				fmt.Printf("      Policy ID: %x\n", multiasset.GetPolicyId())
 				for _, asset := range multiasset.GetAssets() {
-					fmt.Printf("        Asset Name: %s\n", string(asset.GetName()))
-					fmt.Printf("        Output Coin: %d\n", asset.GetOutputCoin())
+					fmt.Printf(
+						"        Asset Name: %s\n",
+						string(asset.GetName()),
+					)
+					fmt.Printf(
+						"        Output Coin: %d\n",
+						asset.GetOutputCoin(),
+					)
 					fmt.Printf("        Mint Coin: %d\n", asset.GetMintCoin())
 				}
 			}

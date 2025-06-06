@@ -179,7 +179,12 @@ func (u *UtxorpcClient) GetUtxosByAddressWithAsset(
 	policyIdBytes []byte,
 	assetNameBytes []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	return u.GetUtxosByAddressWithAssetWithContext(context.Background(), addressBytes, policyIdBytes, assetNameBytes)
+	return u.GetUtxosByAddressWithAssetWithContext(
+		context.Background(),
+		addressBytes,
+		policyIdBytes,
+		assetNameBytes,
+	)
 }
 
 func (u *UtxorpcClient) GetUtxosByAddressWithAssetWithContext(
@@ -235,7 +240,11 @@ func (u *UtxorpcClient) GetUtxosByAsset(
 	policyIdBytes []byte,
 	assetNameBytes []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	return u.GetUtxosByAssetWithContext(context.Background(), policyIdBytes, assetNameBytes)
+	return u.GetUtxosByAssetWithContext(
+		context.Background(),
+		policyIdBytes,
+		assetNameBytes,
+	)
 }
 
 func (u *UtxorpcClient) GetUtxosByAssetWithContext(
@@ -244,7 +253,9 @@ func (u *UtxorpcClient) GetUtxosByAssetWithContext(
 	assetNameBytes []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
 	if policyIdBytes == nil && assetNameBytes == nil {
-		return nil, errors.New("at least one of policyId or assetName must be provided")
+		return nil, errors.New(
+			"at least one of policyId or assetName must be provided",
+		)
 	}
 
 	assetPattern := &cardano.AssetPattern{}
