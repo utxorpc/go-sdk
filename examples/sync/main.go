@@ -40,7 +40,7 @@ func fetchBlock(
 	blockIndex int64,
 ) {
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	resp, err := client.FetchBlock(blockHash, blockIndex)
+	resp, err := client.GetBlockByRef(blockHash, blockIndex)
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
@@ -58,7 +58,7 @@ func followTip(
 	blockIndex int64,
 ) {
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	stream, err := client.FollowTip(blockHash, blockIndex)
+	stream, err := client.WatchBlocksByRef(blockHash, blockIndex)
 	if err != nil {
 		utxorpc.HandleError(err)
 		return

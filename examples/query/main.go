@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"connectrpc.com/connect"
 	"github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
@@ -63,7 +64,7 @@ func main() {
 
 func readParams(client *utxorpc.UtxorpcClient) {
 	fmt.Println("Connecting to utxorpc host:", client.URL())
-	resp, err := client.ReadParams()
+	resp, err := client.GetProtocolParameters()
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
@@ -199,7 +200,7 @@ func searchUtxos(
 	}
 
 	fmt.Println("connecting to utxorpc host:", client.URL())
-	resp, err := client.SearchUtxos(searchRequest)
+	resp, err := client.SearchUtxos(connect.NewRequest(searchRequest))
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
