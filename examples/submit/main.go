@@ -55,7 +55,7 @@ func main() {
 // Modified submitTx to return transaction references
 func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
 	fmt.Println("Connecting to utxorpc host:", client.URL())
-	resp, err := client.SubmitTx(txCbor)
+	resp, err := client.SubmitTransaction(txCbor)
 	if err != nil {
 		var connectErr *connect.Error
 		if errors.As(err, &connectErr) {
@@ -89,7 +89,7 @@ func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
 }
 
 func readMempool(client *utxorpc.UtxorpcClient) {
-	resp, err := client.ReadMempool()
+	resp, err := client.GetMempoolTransactions()
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
@@ -105,7 +105,7 @@ func waitForTx(
 
 	fmt.Println("Connecting to utxorpc host:", client.URL())
 	// Open a streaming connection to wait for transaction confirmation
-	stream, err := client.WaitForTx(txRef)
+	stream, err := client.WaitForTransaction(txRef)
 	if err != nil {
 		return fmt.Errorf("failed to open waitForTx stream: %w", err)
 	}
@@ -136,7 +136,7 @@ func waitForTx(
 
 func watchMempool(client *utxorpc.UtxorpcClient) {
 	fmt.Println("Connecting to utxorpc host:", client.URL())
-	stream, err := client.WatchMempool()
+	stream, err := client.WatchMempoolTransactions()
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
