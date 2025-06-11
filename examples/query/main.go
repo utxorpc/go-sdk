@@ -26,13 +26,24 @@ func main() {
 		client.SetHeader("dmtr-api-key", dmtrApiKey)
 	}
 
+	fmt.Println("Connecting to utxorpc host:", client.URL())
+	fmt.Println()
+
 	// Run them all
 	readParams(client)
+	fmt.Println()
 	readUtxo(
 		client,
 		"24efe5f12d1d93bb419cfb84338d6602dfe78c614b489edb72df0594a077431c",
 		0,
 	)
+	fmt.Println()
+	// everything on address
+	getUtxosByAddress(
+		client,
+		"addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt",
+	)
+	fmt.Println()
 	// https://preprod.cexplorer.io/asset/asset1tvkt35str8aeepuflxmnjzcdj87em8xrlx4ehz
 	// Use policy ID and asset name in hex format (https://cips.cardano.org/cip/CIP-68/)
 	// Hunt
@@ -42,6 +53,7 @@ func main() {
 		"63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5",
 		"0014df1048554e54",
 	)
+	fmt.Println()
 	// Dedi
 	searchUtxos(
 		client,
@@ -49,6 +61,7 @@ func main() {
 		"63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5",
 		"0014df1044454449",
 	)
+	fmt.Println()
 	// No assets
 	searchUtxos(
 		client,
@@ -56,19 +69,18 @@ func main() {
 		"63f9a5fc96d4f87026e97af4569975016b50eef092a46859b61898e5",
 		"0014df1044454449",
 	)
-	getUtxosByAddress(
-		client,
-		"addr_test1qptfy9zhaeuqfptcu79q6gm9l3r6cfp5gnlqc7m42qwln0lsvex239qmryg4yh3pda3rh3rnce4wd46gdyqlscrq7s4shekqrt",
-	)
+	fmt.Println()
 }
 
 func readParams(client *utxorpc.UtxorpcClient) {
-	fmt.Println("Connecting to utxorpc host:", client.URL())
+	fmt.Println("getting protocol parameters")
 	resp, err := client.GetProtocolParameters()
 	if err != nil {
 		utxorpc.HandleError(err)
 	}
-	fmt.Printf("Response: %+v\n", resp)
+
+	// Uncomment to print the full response for debugging
+	// fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.GetLedgerTip() != nil {
 		fmt.Printf(
@@ -87,14 +99,15 @@ func readUtxo(
 	txHashStr string,
 	txIndex uint32,
 ) {
+	fmt.Println("getting utxo by reference")
 	resp, err := client.GetUtxoByRef(txHashStr, txIndex)
 	if err != nil {
 		utxorpc.HandleError(err)
 		return
 	}
 
-	// Process the response
-	fmt.Printf("Response: %+v\n", resp)
+	// Uncomment to print the full response for debugging
+	// fmt.Printf("Response: %+v\n", resp)
 
 	if resp.Msg.GetLedgerTip() != nil {
 		fmt.Printf(
@@ -131,10 +144,7 @@ func searchUtxos(
 	if err != nil {
 		log.Fatalf("failed to create address: %v", err)
 	}
-	addrCbor, err := addr.MarshalCBOR()
-	if err != nil {
-		log.Fatalf("failed to marshal address to CBOR: %v", err)
-	}
+	addrCbor := addr.Bytes()
 
 	var txOutputPattern *cardano.TxOutputPattern
 	if policyID != "" && assetName != "" {
@@ -199,7 +209,7 @@ func searchUtxos(
 		StartToken: "",  // For pagination; empty for the first page
 	}
 
-	fmt.Println("connecting to utxorpc host:", client.URL())
+	fmt.Printf("searching utxos: address: %s, policy: %s, asset: %s\n", rawAddress, policyID, assetName)
 	resp, err := client.SearchUtxos(connect.NewRequest(searchRequest))
 	if err != nil {
 		utxorpc.HandleError(err)
@@ -253,12 +263,9 @@ func getUtxosByAddress(
 	if err != nil {
 		log.Fatalf("failed to create address: %v", err)
 	}
-	addrCbor, err := addr.MarshalCBOR()
-	if err != nil {
-		log.Fatalf("failed to marshal address to CBOR: %v", err)
-	}
+	addrCbor := addr.Bytes()
 
-	fmt.Println("connecting to utxorpc host:", client.URL())
+	fmt.Printf("searching utxos: address: %s\n", rawAddress)
 	resp, err := client.GetUtxosByAddress(addrCbor)
 	if err != nil {
 		utxorpc.HandleError(err)
