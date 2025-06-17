@@ -144,7 +144,10 @@ func searchUtxos(
 	if err != nil {
 		log.Fatalf("failed to create address: %v", err)
 	}
-	addrCbor := addr.Bytes()
+	addrCbor, err := addr.Bytes()
+	if err != nil {
+		log.Fatalf("failed to convert address: %v", err)
+	}
 
 	var txOutputPattern *cardano.TxOutputPattern
 	if policyID != "" && assetName != "" {
@@ -263,7 +266,10 @@ func getUtxosByAddress(
 	if err != nil {
 		log.Fatalf("failed to create address: %v", err)
 	}
-	addrCbor := addr.Bytes()
+	addrCbor, err := addr.Bytes()
+	if err != nil {
+		log.Fatalf("failed to convert address: %v", err)
+	}
 
 	fmt.Printf("searching utxos: address: %s\n", rawAddress)
 	resp, err := client.GetUtxosByAddress(addrCbor)
