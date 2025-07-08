@@ -106,6 +106,6 @@ func printBlockRef(blockRef *sync.BlockRef) {
 		return
 	}
 	hash := hex.EncodeToString(blockRef.GetHash())
-	slot := blockRef.GetIndex()
+	slot := blockRef.GetSlot()
 	fmt.Printf("Block Slot: %d, Block Hash: %s\n", slot, hash)
 }

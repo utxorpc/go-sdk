@@ -370,7 +370,7 @@ func syncIntersect(blockHashStr string, blockIndex int64) []*sync.BlockRef {
 	// We assume blockIndex can be 0 or any positive number, and won't overflow
 	// #nosec G115
 	if blockIndex > -1 {
-		blockRef.Index = uint64(blockIndex)
+		blockRef.Slot = uint64(blockIndex)
 	}
 	// Only add blockRef to intersect if at least one of blockHashStr or blockIndex is provided
 	if blockHashStr != "" || blockIndex > -1 {
@@ -494,7 +494,7 @@ func watchIntersect(blockHashStr string, blockIndex int64) []*watch.BlockRef {
 	// We assume blockIndex can be 0 or any positive number, and won't overflow
 	// #nosec G115
 	if blockIndex > -1 {
-		blockRef.Index = uint64(blockIndex)
+		blockRef.Slot = uint64(blockIndex)
 	}
 	// Only add blockRef to intersect if at least one of blockHashStr or blockIndex is provided
 	if blockHashStr != "" || blockIndex > -1 {
