@@ -11,7 +11,7 @@ require (
 	connectrpc.com/connect v1.18.1
 	github.com/blinklabs-io/gouroboros v0.128.2
 	github.com/utxorpc/go-codegen v0.17.0
-	golang.org/x/net v0.41.0
+	golang.org/x/net v0.42.0
 	google.golang.org/protobuf v1.36.6
 )
 
@@ -20,7 +20,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.39.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/crypto v0.40.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
 )
