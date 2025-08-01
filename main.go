@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 
 	"connectrpc.com/connect"
 	"golang.org/x/net/http2"
@@ -48,7 +49,11 @@ func NewClient(options ...ClientOption) *UtxorpcClient {
 		option(u)
 	}
 	if u.httpClient == nil {
-		u.httpClient = createHttpClient()
+		if strings.HasPrefix(u.baseUrl, "http://") {
+			u.httpClient = createHttpClient(false)
+		} else {
+			u.httpClient = createHttpClient(true)
+		}
 	}
 	u.Query = u.NewQueryServiceClient()
 	u.Submit = u.NewSubmitServiceClient()
@@ -77,7 +82,7 @@ func (u *UtxorpcClient) URL() string {
 	return u.baseUrl
 }
 
-func createHttpClient() *http.Client {
+func createHttpClient(enableTls bool) *http.Client {
 	return &http.Client{
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -85,20 +90,18 @@ func createHttpClient() *http.Client {
 		Transport: &http2.Transport{
 			AllowHTTP: true,
 			DialTLS: func(network, addr string, tlsConfig *tls.Config) (net.Conn, error) {
-				// If you're also using this client for non-h2c traffic, you may want
-				// to delegate to tls.Dial if the network isn't TCP or the addr isn't
-				// in an allowlist.
-				// return net.Dial(network, addr)
-
-				// Establish a TLS connection using the custom TLS configuration
-				conn, err := tls.Dial(network, addr, tlsConfig)
-				if err != nil {
-					return nil, fmt.Errorf(
-						"failed to establish TLS connection: %w",
-						err,
-					)
+				if enableTls {
+					// Establish a TLS connection using the custom TLS configuration
+					conn, err := tls.Dial(network, addr, tlsConfig)
+					if err != nil {
+						return nil, fmt.Errorf(
+							"failed to establish TLS connection: %w",
+							err,
+						)
+					}
+					return conn, nil
 				}
-				return conn, nil
+				return net.Dial(network, addr)
 			},
 		},
 	}
