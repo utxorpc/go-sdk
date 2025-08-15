@@ -9,14 +9,14 @@ toolchain go1.24.1
 
 require (
 	connectrpc.com/connect v1.18.1
-	github.com/blinklabs-io/gouroboros v0.129.0
+	github.com/blinklabs-io/gouroboros v0.130.1
 	github.com/utxorpc/go-codegen v0.17.0
 	golang.org/x/net v0.42.0
 	google.golang.org/protobuf v1.36.7
 )
 
 require (
-	github.com/blinklabs-io/plutigo v0.0.2-0.20250717183329-b331a97fb319 // indirect
+	github.com/blinklabs-io/plutigo v0.0.3 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.6 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
