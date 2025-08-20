@@ -72,6 +72,55 @@ func main() {
 	fmt.Println()
 }
 
+func getData(
+	client *utxorpc.UtxorpcClient,
+	dataHashStr string,
+) {
+	fmt.Println("getting data by hash:", dataHashStr)
+
+	// Convert dataHashStr from hex to bytes
+	dataHashBytes, err := hex.DecodeString(dataHashStr)
+	if err != nil {
+		log.Fatal("failed to decode data hash: %v", err)
+	}
+	// Define the field mask
+	fieldMask := &fieldmaskpb.FieldMask{
+		Paths: []string{
+			// "native_bytes",
+		},
+	}
+	dataRequest := &query.ReadDataRequest{
+		Keys: [][]byte{dataHashBytes},
+		FieldMask:  fieldMask,
+	}
+	resp, err := client.ReadData(connect.NewRequest(dataRequest))
+	if err != nil {
+		utxorpc.HandleError(err)
+		return
+	}
+
+	// Uncomment to print the full response for debugging
+	// fmt.Printf("Response: %+v\n", resp)
+
+	if resp.Msg.GetLedgerTip() != nil {
+		fmt.Printf(
+			"Ledger Tip:\n  Slot: %d\n  Hash: %x\n",
+			resp.Msg.GetLedgerTip().GetSlot(),
+			resp.Msg.GetLedgerTip().GetHash(),
+		)
+	}
+
+	for _, item := range resp.Msg.GetValues() {
+		fmt.Println("Data:")
+		fmt.Printf("  Data Hash: %x\n", item.GetKey())
+		fmt.Printf("  Native Bytes: %x\n", item.GetNativeBytes())
+		if cardano := item.GetCardano(); cardano != nil {
+			fmt.Println("  Cardano Plutus Data:")
+			fmt.Printf("    Data: %x\n", cardano.GetPlutusData())
+		}
+	}
+}
+
 func readParams(client *utxorpc.UtxorpcClient) {
 	fmt.Println("getting protocol parameters")
 	resp, err := client.GetProtocolParameters()
