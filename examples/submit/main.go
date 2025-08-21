@@ -8,7 +8,8 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit"
-	utxorpc "github.com/utxorpc/go-sdk"
+	"github.com/utxorpc/go-sdk"
+	utxorpc "github.com/utxorpc/go-sdk/cardano"
 )
 
 func main() {
@@ -16,11 +17,11 @@ func main() {
 	if baseUrl == "" {
 		baseUrl = "https://preview.utxorpc-v0.demeter.run"
 	}
-	client := utxorpc.NewClient(utxorpc.WithBaseUrl(baseUrl))
+	client := utxorpc.NewClient(sdk.WithBaseUrl(baseUrl))
 	dmtrApiKey := os.Getenv("DMTR_API_KEY")
 	// set API key for demeter
 	if dmtrApiKey != "" {
-		client.SetHeader("dmtr-api-key", dmtrApiKey)
+		client.UtxorpcClient.SetHeader("dmtr-api-key", dmtrApiKey)
 	}
 
 	// Set mode to "submitTx", "readMempool", "waitForTx", or "watchMempool" to select the desired example.
@@ -53,8 +54,8 @@ func main() {
 }
 
 // Modified submitTx to return transaction references
-func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
-	fmt.Println("Connecting to utxorpc host:", client.URL())
+func submitTx(client *utxorpc.Client, txCbor string) (string, error) {
+	fmt.Println("Connecting to utxorpc host:", client.UtxorpcClient.URL())
 	resp, err := client.SubmitTransaction(txCbor)
 	if err != nil {
 		var connectErr *connect.Error
@@ -88,22 +89,22 @@ func submitTx(client *utxorpc.UtxorpcClient, txCbor string) (string, error) {
 	return "", errors.New("no references found in the response")
 }
 
-func readMempool(client *utxorpc.UtxorpcClient) {
+func readMempool(client *utxorpc.Client) {
 	resp, err := client.GetMempoolTransactions()
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 	}
 	fmt.Printf("Response: %+v\n", resp)
 }
 
 func waitForTx(
-	client *utxorpc.UtxorpcClient,
+	client *utxorpc.Client,
 	txRef string,
 ) error {
 	fmt.Println("Waiting for the following transaction reference:")
 	fmt.Printf("  TxRef: %s\n", txRef)
 
-	fmt.Println("Connecting to utxorpc host:", client.URL())
+	fmt.Println("Connecting to utxorpc host:", client.UtxorpcClient.URL())
 	// Open a streaming connection to wait for transaction confirmation
 	stream, err := client.WaitForTransaction(txRef)
 	if err != nil {
@@ -134,11 +135,11 @@ func waitForTx(
 	return nil
 }
 
-func watchMempool(client *utxorpc.UtxorpcClient) {
-	fmt.Println("Connecting to utxorpc host:", client.URL())
+func watchMempool(client *utxorpc.Client) {
+	fmt.Println("Connecting to utxorpc host:", client.UtxorpcClient.URL())
 	stream, err := client.WatchMempoolTransactions()
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 	}
 
 	fmt.Println("Connected to utxorpc host, watching mempool...")

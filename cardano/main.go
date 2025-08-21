@@ -1,4 +1,4 @@
-package sdk
+package cardano
 
 import (
 	"context"
@@ -13,76 +13,41 @@ import (
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/watch"
+	sdk "github.com/utxorpc/go-sdk"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
-func (u *UtxorpcClient) EvaluateTransaction(
-	txCbor string,
-) (*connect.Response[submit.EvalTxResponse], error) {
+type Client struct {
+	UtxorpcClient *sdk.UtxorpcClient
+}
+
+func NewClient(options ...sdk.ClientOption) *Client {
+	c := &Client{}
+	c.UtxorpcClient = sdk.NewClient(options...)
+	return c
+}
+
+func (c *Client) GetProtocolParameters() (*connect.Response[query.ReadParamsResponse], error) {
 	ctx := context.Background()
-	// Decode the transaction data from hex
-	txRawBytes, err := hex.DecodeString(txCbor)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode transaction hash: %w", err)
-	}
-
-	// Create a EvalTxRequest with the transaction data
-	tx := &submit.AnyChainTx{
-		Type: &submit.AnyChainTx_Raw{
-			Raw: txRawBytes,
-		},
-	}
-
-	// Create a list with one transaction
-	req := &submit.EvalTxRequest{
-		Tx: []*submit.AnyChainTx{tx},
-	}
-	return u.EvaluateTransactionWithContext(ctx, req)
+	return c.GetProtocolParametersWithContext(ctx)
 }
 
-func (u *UtxorpcClient) EvaluateTransactionWithContext(
-	ctx context.Context,
-	txReq *submit.EvalTxRequest,
-) (*connect.Response[submit.EvalTxResponse], error) {
-	req := connect.NewRequest(txReq)
-	u.AddHeadersToRequest(req)
-	return u.Submit.EvalTx(ctx, req)
-}
-
-func (u *UtxorpcClient) GetMempoolTransactions() (*connect.Response[submit.ReadMempoolResponse], error) {
-	ctx := context.Background()
-	return u.GetMempoolTransactionsWithContext(ctx)
-}
-
-func (u *UtxorpcClient) GetMempoolTransactionsWithContext(
-	ctx context.Context,
-) (*connect.Response[submit.ReadMempoolResponse], error) {
-	req := connect.NewRequest(&submit.ReadMempoolRequest{})
-	u.AddHeadersToRequest(req)
-	return u.Submit.ReadMempool(ctx, req)
-}
-
-func (u *UtxorpcClient) GetProtocolParameters() (*connect.Response[query.ReadParamsResponse], error) {
-	ctx := context.Background()
-	return u.GetProtocolParametersWithContext(ctx)
-}
-
-func (u *UtxorpcClient) GetProtocolParametersWithContext(
+func (c *Client) GetProtocolParametersWithContext(
 	ctx context.Context,
 ) (*connect.Response[query.ReadParamsResponse], error) {
 	req := connect.NewRequest(&query.ReadParamsRequest{})
-	u.AddHeadersToRequest(req)
-	return u.Query.ReadParams(ctx, req)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Query.ReadParams(ctx, req)
 }
 
-func (u *UtxorpcClient) GetUtxoByRef(
+func (c *Client) GetUtxoByRef(
 	txHashStr string,
 	txIndex uint32,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
-	return u.GetUtxoByRefWithContext(context.Background(), txHashStr, txIndex)
+	return c.GetUtxoByRefWithContext(context.Background(), txHashStr, txIndex)
 }
 
-func (u *UtxorpcClient) GetUtxoByRefWithContext(
+func (c *Client) GetUtxoByRefWithContext(
 	ctx context.Context,
 	txHashStr string,
 	txIndex uint32,
@@ -105,16 +70,62 @@ func (u *UtxorpcClient) GetUtxoByRefWithContext(
 	}
 	txReq := &query.ReadUtxosRequest{Keys: []*query.TxoRef{txoRef}}
 	req := connect.NewRequest(txReq)
-	return u.ReadUtxosWithContext(ctx, req)
+	return c.UtxorpcClient.ReadUtxosWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) GetUtxosByRefs(
+func (c *Client) EvaluateTransaction(
+	txCbor string,
+) (*connect.Response[submit.EvalTxResponse], error) {
+	ctx := context.Background()
+	// Decode the transaction data from hex
+	txRawBytes, err := hex.DecodeString(txCbor)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode transaction hash: %w", err)
+	}
+
+	// Create a EvalTxRequest with the transaction data
+	tx := &submit.AnyChainTx{
+		Type: &submit.AnyChainTx_Raw{
+			Raw: txRawBytes,
+		},
+	}
+
+	// Create a list with one transaction
+	req := &submit.EvalTxRequest{
+		Tx: []*submit.AnyChainTx{tx},
+	}
+	return c.EvaluateTransactionWithContext(ctx, req)
+}
+
+func (c *Client) EvaluateTransactionWithContext(
+	ctx context.Context,
+	txReq *submit.EvalTxRequest,
+) (*connect.Response[submit.EvalTxResponse], error) {
+	req := connect.NewRequest(txReq)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Submit.EvalTx(ctx, req)
+}
+
+func (c *Client) GetMempoolTransactions() (*connect.Response[submit.ReadMempoolResponse], error) {
+	ctx := context.Background()
+	return c.GetMempoolTransactionsWithContext(ctx)
+}
+
+func (c *Client) GetMempoolTransactionsWithContext(
+	ctx context.Context,
+) (*connect.Response[submit.ReadMempoolResponse], error) {
+	req := connect.NewRequest(&submit.ReadMempoolRequest{})
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Submit.ReadMempool(ctx, req)
+}
+
+func (c *Client) GetUtxosByRefs(
 	refs []*query.TxoRef,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
-	return u.GetUtxosByRefsWithContext(context.Background(), refs)
+	return c.GetUtxosByRefsWithContext(context.Background(), refs)
 }
 
-func (u *UtxorpcClient) GetUtxosByRefsWithContext(
+func (c *Client) GetUtxosByRefsWithContext(
 	ctx context.Context,
 	refs []*query.TxoRef,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
@@ -124,16 +135,16 @@ func (u *UtxorpcClient) GetUtxosByRefsWithContext(
 
 	txReq := &query.ReadUtxosRequest{Keys: refs}
 	req := connect.NewRequest(txReq)
-	return u.ReadUtxosWithContext(ctx, req)
+	return c.UtxorpcClient.ReadUtxosWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) GetUtxosByAddress(
+func (c *Client) GetUtxosByAddress(
 	address []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	return u.GetUtxosByAddressWithContext(context.Background(), address)
+	return c.GetUtxosByAddressWithContext(context.Background(), address)
 }
 
-func (u *UtxorpcClient) GetUtxosByAddressWithContext(
+func (c *Client) GetUtxosByAddressWithContext(
 	ctx context.Context,
 	address []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
@@ -154,15 +165,15 @@ func (u *UtxorpcClient) GetUtxosByAddressWithContext(
 		StartToken: "",  // For pagination, start at first page
 	}
 	req := connect.NewRequest(queryReq)
-	return u.SearchUtxosWithContext(ctx, req)
+	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) GetUtxosByAddressWithAsset(
+func (c *Client) GetUtxosByAddressWithAsset(
 	addressBytes []byte,
 	policyIdBytes []byte,
 	assetNameBytes []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	return u.GetUtxosByAddressWithAssetWithContext(
+	return c.GetUtxosByAddressWithAssetWithContext(
 		context.Background(),
 		addressBytes,
 		policyIdBytes,
@@ -170,7 +181,7 @@ func (u *UtxorpcClient) GetUtxosByAddressWithAsset(
 	)
 }
 
-func (u *UtxorpcClient) GetUtxosByAddressWithAssetWithContext(
+func (c *Client) GetUtxosByAddressWithAssetWithContext(
 	ctx context.Context,
 	addressBytes []byte,
 	policyIdBytes []byte,
@@ -216,21 +227,21 @@ func (u *UtxorpcClient) GetUtxosByAddressWithAssetWithContext(
 		StartToken: "",  // For pagination, start at first page
 	}
 	req := connect.NewRequest(queryReq)
-	return u.SearchUtxosWithContext(ctx, req)
+	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) GetUtxosByAsset(
+func (c *Client) GetUtxosByAsset(
 	policyIdBytes []byte,
 	assetNameBytes []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	return u.GetUtxosByAssetWithContext(
+	return c.GetUtxosByAssetWithContext(
 		context.Background(),
 		policyIdBytes,
 		assetNameBytes,
 	)
 }
 
-func (u *UtxorpcClient) GetUtxosByAssetWithContext(
+func (c *Client) GetUtxosByAssetWithContext(
 	ctx context.Context,
 	policyIdBytes []byte,
 	assetNameBytes []byte,
@@ -271,10 +282,10 @@ func (u *UtxorpcClient) GetUtxosByAssetWithContext(
 		StartToken: "",  // For pagination, start at first page
 	}
 	req := connect.NewRequest(queryReq)
-	return u.SearchUtxosWithContext(ctx, req)
+	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) SubmitTransaction(
+func (c *Client) SubmitTransaction(
 	txCbor string,
 ) (*connect.Response[submit.SubmitTxResponse], error) {
 	ctx := context.Background()
@@ -295,19 +306,19 @@ func (u *UtxorpcClient) SubmitTransaction(
 	req := &submit.SubmitTxRequest{
 		Tx: []*submit.AnyChainTx{tx},
 	}
-	return u.SubmitTransactionWithContext(ctx, req)
+	return c.SubmitTransactionWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) SubmitTransactionWithContext(
+func (c *Client) SubmitTransactionWithContext(
 	ctx context.Context,
 	txReq *submit.SubmitTxRequest,
 ) (*connect.Response[submit.SubmitTxResponse], error) {
 	req := connect.NewRequest(txReq)
-	u.AddHeadersToRequest(req)
-	return u.Submit.SubmitTx(ctx, req)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Submit.SubmitTx(ctx, req)
 }
 
-func (u *UtxorpcClient) WaitForTransaction(
+func (c *Client) WaitForTransaction(
 	txRef string,
 ) (*connect.ServerStreamForClient[submit.WaitForTxResponse], error) {
 	ctx := context.Background()
@@ -327,33 +338,33 @@ func (u *UtxorpcClient) WaitForTransaction(
 	req := &submit.WaitForTxRequest{
 		Ref: decodedRefs,
 	}
-	return u.WaitForTransactionWithContext(ctx, req)
+	return c.WaitForTransactionWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) WaitForTransactionWithContext(
+func (c *Client) WaitForTransactionWithContext(
 	ctx context.Context,
 	txReq *submit.WaitForTxRequest,
 ) (*connect.ServerStreamForClient[submit.WaitForTxResponse], error) {
 	req := connect.NewRequest(txReq)
-	u.AddHeadersToRequest(req)
-	return u.Submit.WaitForTx(ctx, req)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Submit.WaitForTx(ctx, req)
 }
 
-func (u *UtxorpcClient) WatchMempoolTransactions() (
+func (c *Client) WatchMempoolTransactions() (
 	*connect.ServerStreamForClient[submit.WatchMempoolResponse],
 	error,
 ) {
 	ctx := context.Background()
-	return u.WatchMempoolTransactionsWithContext(ctx)
+	return c.WatchMempoolTransactionsWithContext(ctx)
 }
 
-func (u *UtxorpcClient) WatchMempoolTransactionsWithContext(ctx context.Context) (
+func (c *Client) WatchMempoolTransactionsWithContext(ctx context.Context) (
 	*connect.ServerStreamForClient[submit.WatchMempoolResponse],
 	error,
 ) {
 	req := connect.NewRequest(&submit.WatchMempoolRequest{})
-	u.AddHeadersToRequest(req)
-	return u.Submit.WatchMempool(ctx, req)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Submit.WatchMempool(ctx, req)
 }
 
 func syncIntersect(blockHashStr string, blockIndex int64) []*sync.BlockRef {
@@ -379,25 +390,25 @@ func syncIntersect(blockHashStr string, blockIndex int64) []*sync.BlockRef {
 	return intersect
 }
 
-func (u *UtxorpcClient) GetBlockByRef(
+func (c *Client) GetBlockByRef(
 	blockHashStr string,
 	blockIndex int64,
 ) (*connect.Response[sync.FetchBlockResponse], error) {
 	ctx := context.Background()
 	req := &sync.FetchBlockRequest{Ref: syncIntersect(blockHashStr, blockIndex)}
-	return u.GetBlockByRefWithContext(ctx, req)
+	return c.GetBlockByRefWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) GetBlockByRefWithContext(
+func (c *Client) GetBlockByRefWithContext(
 	ctx context.Context,
 	blockReq *sync.FetchBlockRequest,
 ) (*connect.Response[sync.FetchBlockResponse], error) {
 	req := connect.NewRequest(blockReq)
-	u.AddHeadersToRequest(req)
-	return u.Sync.FetchBlock(ctx, req)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Sync.FetchBlock(ctx, req)
 }
 
-func (u *UtxorpcClient) WatchBlocksByRef(
+func (c *Client) WatchBlocksByRef(
 	blockHashStr string,
 	blockIndex int64,
 ) (*connect.ServerStreamForClient[sync.FollowTipResponse], error) {
@@ -405,30 +416,30 @@ func (u *UtxorpcClient) WatchBlocksByRef(
 	req := &sync.FollowTipRequest{
 		Intersect: syncIntersect(blockHashStr, blockIndex),
 	}
-	return u.WatchBlocksByRefWithContext(ctx, req)
+	return c.WatchBlocksByRefWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) WatchBlocksByRefWithContext(
+func (c *Client) WatchBlocksByRefWithContext(
 	ctx context.Context,
 	blockReq *sync.FollowTipRequest,
 ) (*connect.ServerStreamForClient[sync.FollowTipResponse], error) {
 	req := connect.NewRequest(blockReq)
-	u.AddHeadersToRequest(req)
-	return u.Sync.FollowTip(ctx, req)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Sync.FollowTip(ctx, req)
 }
 
-func (u *UtxorpcClient) GetTip() (*connect.Response[sync.ReadTipResponse], error) {
-	return u.GetTipWithContext(context.Background())
+func (c *Client) GetTip() (*connect.Response[sync.ReadTipResponse], error) {
+	return c.GetTipWithContext(context.Background())
 }
 
-func (u *UtxorpcClient) GetTipWithContext(
+func (c *Client) GetTipWithContext(
 	ctx context.Context,
 ) (*connect.Response[sync.ReadTipResponse], error) {
 	readTipReqProto := &sync.ReadTipRequest{}
 	reqReadTip := connect.NewRequest(readTipReqProto)
-	u.AddHeadersToRequest(reqReadTip)
+	c.UtxorpcClient.AddHeadersToRequest(reqReadTip)
 
-	tipResp, err := u.Sync.ReadTip(ctx, reqReadTip)
+	tipResp, err := c.UtxorpcClient.Sync.ReadTip(ctx, reqReadTip)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read tip: %w", err)
 	}
@@ -439,13 +450,13 @@ func (u *UtxorpcClient) GetTipWithContext(
 	return tipResp, nil
 }
 
-func (u *UtxorpcClient) ReadBlock(
+func (c *Client) ReadBlock(
 	blockRef *sync.BlockRef,
 ) (*connect.Response[sync.FetchBlockResponse], error) {
-	return u.ReadBlockWithContext(context.Background(), blockRef)
+	return c.ReadBlockWithContext(context.Background(), blockRef)
 }
 
-func (u *UtxorpcClient) ReadBlockWithContext(
+func (c *Client) ReadBlockWithContext(
 	ctx context.Context,
 	blockRef *sync.BlockRef,
 ) (*connect.Response[sync.FetchBlockResponse], error) {
@@ -453,9 +464,9 @@ func (u *UtxorpcClient) ReadBlockWithContext(
 		Ref: []*sync.BlockRef{blockRef},
 	}
 	reqFetchBlock := connect.NewRequest(fetchBlockReqProto)
-	u.AddHeadersToRequest(reqFetchBlock)
+	c.UtxorpcClient.AddHeadersToRequest(reqFetchBlock)
 
-	blockRespFull, err := u.Sync.FetchBlock(ctx, reqFetchBlock)
+	blockRespFull, err := c.UtxorpcClient.Sync.FetchBlock(ctx, reqFetchBlock)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch block for tip: %w", err)
 	}
@@ -503,7 +514,7 @@ func watchIntersect(blockHashStr string, blockIndex int64) []*watch.BlockRef {
 	return intersect
 }
 
-func (u *UtxorpcClient) WatchTransaction(
+func (c *Client) WatchTransaction(
 	blockHashStr string,
 	blockIndex int64,
 ) (*connect.ServerStreamForClient[watch.WatchTxResponse], error) {
@@ -511,14 +522,14 @@ func (u *UtxorpcClient) WatchTransaction(
 	req := &watch.WatchTxRequest{
 		Intersect: watchIntersect(blockHashStr, blockIndex),
 	}
-	return u.WatchTransactionWithContext(ctx, req)
+	return c.WatchTransactionWithContext(ctx, req)
 }
 
-func (u *UtxorpcClient) WatchTransactionWithContext(
+func (c *Client) WatchTransactionWithContext(
 	ctx context.Context,
 	watchReq *watch.WatchTxRequest,
 ) (*connect.ServerStreamForClient[watch.WatchTxResponse], error) {
 	req := connect.NewRequest(watchReq)
-	u.AddHeadersToRequest(req)
-	return u.Watch.WatchTx(ctx, req)
+	c.UtxorpcClient.AddHeadersToRequest(req)
+	return c.UtxorpcClient.Watch.WatchTx(ctx, req)
 }

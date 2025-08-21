@@ -10,7 +10,8 @@ import (
 	"github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
-	utxorpc "github.com/utxorpc/go-sdk"
+	"github.com/utxorpc/go-sdk"
+	utxorpc "github.com/utxorpc/go-sdk/cardano"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
@@ -19,14 +20,14 @@ func main() {
 	if baseUrl == "" {
 		baseUrl = "https://preview.utxorpc-v0.demeter.run"
 	}
-	client := utxorpc.NewClient(utxorpc.WithBaseUrl(baseUrl))
+	client := utxorpc.NewClient(sdk.WithBaseUrl(baseUrl))
 	dmtrApiKey := os.Getenv("DMTR_API_KEY")
 	// set API key for demeter
 	if dmtrApiKey != "" {
-		client.SetHeader("dmtr-api-key", dmtrApiKey)
+		client.UtxorpcClient.SetHeader("dmtr-api-key", dmtrApiKey)
 	}
 
-	fmt.Println("Connecting to utxorpc host:", client.URL())
+	fmt.Println("Connecting to utxorpc host:", client.UtxorpcClient.URL())
 	fmt.Println()
 
 	// Run them all
@@ -72,11 +73,11 @@ func main() {
 	fmt.Println()
 }
 
-func readParams(client *utxorpc.UtxorpcClient) {
+func readParams(client *utxorpc.Client) {
 	fmt.Println("getting protocol parameters")
 	resp, err := client.GetProtocolParameters()
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 	}
 
 	// Uncomment to print the full response for debugging
@@ -95,14 +96,14 @@ func readParams(client *utxorpc.UtxorpcClient) {
 }
 
 func readUtxo(
-	client *utxorpc.UtxorpcClient,
+	client *utxorpc.Client,
 	txHashStr string,
 	txIndex uint32,
 ) {
 	fmt.Println("getting utxo by reference")
 	resp, err := client.GetUtxoByRef(txHashStr, txIndex)
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 		return
 	}
 
@@ -134,7 +135,7 @@ func readUtxo(
 }
 
 func searchUtxos(
-	client *utxorpc.UtxorpcClient,
+	client *utxorpc.Client,
 	rawAddress string,
 	policyID string,
 	assetName string,
@@ -213,9 +214,9 @@ func searchUtxos(
 	}
 
 	fmt.Printf("searching utxos: address: %s, policy: %s, asset: %s\n", rawAddress, policyID, assetName)
-	resp, err := client.SearchUtxos(connect.NewRequest(searchRequest))
+	resp, err := client.UtxorpcClient.SearchUtxos(connect.NewRequest(searchRequest))
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 	}
 
 	// Uncomment to print the full response for debugging
@@ -258,7 +259,7 @@ func searchUtxos(
 }
 
 func getUtxosByAddress(
-	client *utxorpc.UtxorpcClient,
+	client *utxorpc.Client,
 	rawAddress string,
 ) {
 	// Use to support bech32/base58 addresses
@@ -274,7 +275,7 @@ func getUtxosByAddress(
 	fmt.Printf("searching utxos: address: %s\n", rawAddress)
 	resp, err := client.GetUtxosByAddress(addrCbor)
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 	}
 
 	// Uncomment to print the full response for debugging
