@@ -6,7 +6,8 @@ import (
 	"os"
 
 	sync "github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
-	utxorpc "github.com/utxorpc/go-sdk"
+	"github.com/utxorpc/go-sdk"
+	utxorpc "github.com/utxorpc/go-sdk/cardano"
 )
 
 func main() {
@@ -14,11 +15,11 @@ func main() {
 	if baseUrl == "" {
 		baseUrl = "https://preview.utxorpc-v0.demeter.run"
 	}
-	client := utxorpc.NewClient(utxorpc.WithBaseUrl(baseUrl))
+	client := utxorpc.NewClient(sdk.WithBaseUrl(baseUrl))
 	dmtrApiKey := os.Getenv("DMTR_API_KEY")
 	// set API key for demeter
 	if dmtrApiKey != "" {
-		client.SetHeader("dmtr-api-key", dmtrApiKey)
+		client.UtxorpcClient.SetHeader("dmtr-api-key", dmtrApiKey)
 	}
 
 	// Run them all
@@ -35,14 +36,14 @@ func main() {
 }
 
 func fetchBlock(
-	client *utxorpc.UtxorpcClient,
+	client *utxorpc.Client,
 	blockHash string,
 	blockIndex int64,
 ) {
-	fmt.Println("connecting to utxorpc host:", client.URL())
+	fmt.Println("connecting to utxorpc host:", client.UtxorpcClient.URL())
 	resp, err := client.GetBlockByRef(blockHash, blockIndex)
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 	}
 	fmt.Printf("Response: %+v\n", resp)
 	for i, blockRef := range resp.Msg.GetBlock() {
@@ -53,14 +54,14 @@ func fetchBlock(
 }
 
 func followTip(
-	client *utxorpc.UtxorpcClient,
+	client *utxorpc.Client,
 	blockHash string,
 	blockIndex int64,
 ) {
-	fmt.Println("connecting to utxorpc host:", client.URL())
+	fmt.Println("connecting to utxorpc host:", client.UtxorpcClient.URL())
 	stream, err := client.WatchBlocksByRef(blockHash, blockIndex)
 	if err != nil {
-		utxorpc.HandleError(err)
+		sdk.HandleError(err)
 		return
 	}
 	fmt.Println("Connected to utxorpc host, following tip...")
