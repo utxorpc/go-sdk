@@ -41,6 +41,36 @@ func (u *UtxorpcClient) ReadDataWithContext(
 	return u.Query.ReadData(ctx, req)
 }
 
+func (u *UtxorpcClient) ReadEraSummary(
+	req *connect.Request[query.ReadEraSummaryRequest],
+) (*connect.Response[query.ReadEraSummaryResponse], error) {
+	ctx := context.Background()
+	return u.ReadEraSummaryWithContext(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadEraSummaryWithContext(
+	ctx context.Context,
+	req *connect.Request[query.ReadEraSummaryRequest],
+) (*connect.Response[query.ReadEraSummaryResponse], error) {
+	u.AddHeadersToRequest(req)
+	return u.Query.ReadEraSummary(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadGenesis(
+	req *connect.Request[query.ReadGenesisRequest],
+) (*connect.Response[query.ReadGenesisResponse], error) {
+	ctx := context.Background()
+	return u.ReadGenesisWithContext(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadGenesisWithContext(
+	ctx context.Context,
+	req *connect.Request[query.ReadGenesisRequest],
+) (*connect.Response[query.ReadGenesisResponse], error) {
+	u.AddHeadersToRequest(req)
+	return u.Query.ReadGenesis(ctx, req)
+}
+
 func (u *UtxorpcClient) ReadParams(
 	req *connect.Request[query.ReadParamsRequest],
 ) (*connect.Response[query.ReadParamsResponse], error) {
@@ -54,6 +84,21 @@ func (u *UtxorpcClient) ReadParamsWithContext(
 ) (*connect.Response[query.ReadParamsResponse], error) {
 	u.AddHeadersToRequest(req)
 	return u.Query.ReadParams(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadTx(
+	req *connect.Request[query.ReadTxRequest],
+) (*connect.Response[query.ReadTxResponse], error) {
+	ctx := context.Background()
+	return u.ReadTxWithContext(ctx, req)
+}
+
+func (u *UtxorpcClient) ReadTxWithContext(
+	ctx context.Context,
+	req *connect.Request[query.ReadTxRequest],
+) (*connect.Response[query.ReadTxResponse], error) {
+	u.AddHeadersToRequest(req)
+	return u.Query.ReadTx(ctx, req)
 }
 
 func (u *UtxorpcClient) ReadUtxos(
