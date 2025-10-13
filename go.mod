@@ -8,7 +8,7 @@ toolchain go1.24.1
 // replace github.com/utxorpc/go-codegen => ../go-codegen
 
 require (
-	connectrpc.com/connect v1.19.0
+	connectrpc.com/connect v1.19.1
 	github.com/blinklabs-io/gouroboros v0.135.2
 	github.com/utxorpc/go-codegen v0.17.0
 	golang.org/x/net v0.44.0
