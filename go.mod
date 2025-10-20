@@ -9,7 +9,7 @@ toolchain go1.24.1
 
 require (
 	connectrpc.com/connect v1.19.1
-	github.com/blinklabs-io/gouroboros v0.135.2
+	github.com/blinklabs-io/gouroboros v0.136.0
 	github.com/utxorpc/go-codegen v0.17.0
 	golang.org/x/net v0.46.0
 	google.golang.org/protobuf v1.36.10
@@ -17,7 +17,7 @@ require (
 
 require (
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
-	github.com/blinklabs-io/plutigo v0.0.12 // indirect
+	github.com/blinklabs-io/plutigo v0.0.13 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.5 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.6 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
