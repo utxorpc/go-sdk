@@ -7,19 +7,22 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"golang.org/x/net/http2"
 )
 
 type UtxorpcClient struct {
-	httpClient connect.HTTPClient
-	baseUrl    string
-	headers    map[string]string
-	Query      QueryServiceClient
-	Submit     SubmitServiceClient
-	Sync       SyncServiceClient
-	Watch      WatchServiceClient
+	httpClient     connect.HTTPClient
+	baseUrl        string
+	headers        map[string]string
+	dialTimeout    time.Duration
+	requestTimeout time.Duration
+	Query          QueryServiceClient
+	Submit         SubmitServiceClient
+	Sync           SyncServiceClient
+	Watch          WatchServiceClient
 }
 
 type ClientOption func(*UtxorpcClient)
@@ -33,6 +36,32 @@ func WithBaseUrl(baseUrl string) ClientOption {
 func WithHeaders(headers map[string]string) ClientOption {
 	return func(u *UtxorpcClient) {
 		u.headers = headers
+	}
+}
+
+// WithDialTimeout sets the timeout duration for establishing a connection to the UTxO RPC server.
+// The timeout applies to the initial dial operation. If the connection cannot be established
+// within the specified duration, the dial operation will fail with a timeout error.
+//
+// This setting does not apply if a custom HTTP client is provided via WithHttpClient.
+//
+// See also: WithRequestTimeout for setting the timeout for individual requests.
+func WithDialTimeout(timeout time.Duration) ClientOption {
+	return func(u *UtxorpcClient) {
+		u.dialTimeout = timeout
+	}
+}
+
+// WithRequestTimeout sets the timeout duration for individual requests made by the UtxorpcClient.
+// The timeout applies to each request operation and will cause the request to fail if it
+// exceeds the specified duration. If not set, requests will use the default timeout behavior.
+//
+// This setting does not apply if a custom HTTP client is provided via WithHttpClient.
+//
+// See also: WithDialTimeout for setting the timeout for establishing connections.
+func WithRequestTimeout(timeout time.Duration) ClientOption {
+	return func(u *UtxorpcClient) {
+		u.requestTimeout = timeout
 	}
 }
 
@@ -50,9 +79,9 @@ func NewClient(options ...ClientOption) *UtxorpcClient {
 	}
 	if u.httpClient == nil {
 		if strings.HasPrefix(u.baseUrl, "http://") {
-			u.httpClient = createHttpClient(false)
+			u.httpClient = createHttpClient(false, u.dialTimeout, u.requestTimeout)
 		} else {
-			u.httpClient = createHttpClient(true)
+			u.httpClient = createHttpClient(true, u.dialTimeout, u.requestTimeout)
 		}
 	}
 	u.Query = u.NewQueryServiceClient()
@@ -82,8 +111,9 @@ func (u *UtxorpcClient) URL() string {
 	return u.baseUrl
 }
 
-func createHttpClient(enableTls bool) *http.Client {
+func createHttpClient(enableTls bool, dialTimeout, requestTimeout time.Duration) *http.Client {
 	return &http.Client{
+		Timeout: requestTimeout,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
@@ -92,7 +122,7 @@ func createHttpClient(enableTls bool) *http.Client {
 			DialTLS: func(network, addr string, tlsConfig *tls.Config) (net.Conn, error) {
 				if enableTls {
 					// Establish a TLS connection using the custom TLS configuration
-					conn, err := tls.Dial(network, addr, tlsConfig)
+					conn, err := tls.DialWithDialer(&net.Dialer{Timeout: dialTimeout}, network, addr, tlsConfig)
 					if err != nil {
 						return nil, fmt.Errorf(
 							"failed to establish TLS connection: %w",
@@ -101,7 +131,7 @@ func createHttpClient(enableTls bool) *http.Client {
 					}
 					return conn, nil
 				}
-				return net.Dial(network, addr)
+				return net.DialTimeout(network, addr, dialTimeout)
 			},
 		},
 	}
