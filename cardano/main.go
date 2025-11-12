@@ -92,7 +92,7 @@ func (c *Client) EvaluateTransaction(
 
 	// Create a list with one transaction
 	req := &submit.EvalTxRequest{
-		Tx: []*submit.AnyChainTx{tx},
+		Tx: tx,
 	}
 	return c.EvaluateTransactionWithContext(ctx, req)
 }
@@ -304,7 +304,7 @@ func (c *Client) SubmitTransaction(
 
 	// Create a list with one transaction
 	req := &submit.SubmitTxRequest{
-		Tx: []*submit.AnyChainTx{tx},
+		Tx: tx,
 	}
 	return c.SubmitTransactionWithContext(ctx, req)
 }
