@@ -126,7 +126,7 @@ func readUtxo(
 		if cardano := item.GetCardano(); cardano != nil {
 			fmt.Println("  Cardano UTxO:")
 			fmt.Printf("    Address: %x\n", cardano.GetAddress())
-			fmt.Printf("    Coin: %d\n", cardano.GetCoin())
+			fmt.Printf("    Coin: %v\n", cardano.GetCoin())
 			if cardano.GetDatum() != nil {
 				fmt.Printf("    Datum Hash: %x\n", cardano.GetDatum().GetHash())
 			}
@@ -238,7 +238,7 @@ func searchUtxos(
 		if cardano := item.GetCardano(); cardano != nil {
 			fmt.Println("  Cardano UTxO:")
 			fmt.Printf("    Address: %x\n", cardano.GetAddress())
-			fmt.Printf("    Coin: %d\n", cardano.GetCoin())
+			fmt.Printf("    Coin: %v\n", cardano.GetCoin())
 			fmt.Println("    Assets:")
 			for _, multiasset := range cardano.GetAssets() {
 				fmt.Printf("      Policy ID: %x\n", multiasset.GetPolicyId())
@@ -248,10 +248,10 @@ func searchUtxos(
 						string(asset.GetName()),
 					)
 					fmt.Printf(
-						"        Output Coin: %d\n",
+						"        Output Coin: %v\n",
 						asset.GetOutputCoin(),
 					)
-					fmt.Printf("        Mint Coin: %d\n", asset.GetMintCoin())
+					fmt.Printf("        Mint Coin: %v\n", asset.GetMintCoin())
 				}
 			}
 		}
@@ -297,7 +297,7 @@ func getUtxosByAddress(
 		if cardano := item.GetCardano(); cardano != nil {
 			fmt.Println("  Cardano UTxO:")
 			fmt.Printf("    Address: %x\n", cardano.GetAddress())
-			fmt.Printf("    Coin: %d\n", cardano.GetCoin())
+			fmt.Printf("    Coin: %v\n", cardano.GetCoin())
 			fmt.Println("    Assets:")
 			for _, multiasset := range cardano.GetAssets() {
 				fmt.Printf("      Policy ID: %x\n", multiasset.GetPolicyId())
@@ -307,10 +307,10 @@ func getUtxosByAddress(
 						string(asset.GetName()),
 					)
 					fmt.Printf(
-						"        Output Coin: %d\n",
+						"        Output Coin: %v\n",
 						asset.GetOutputCoin(),
 					)
-					fmt.Printf("        Mint Coin: %d\n", asset.GetMintCoin())
+					fmt.Printf("        Mint Coin: %v\n", asset.GetMintCoin())
 				}
 			}
 		}

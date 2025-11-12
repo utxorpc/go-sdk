@@ -74,19 +74,15 @@ func submitTx(client *utxorpc.Client, txCbor string) (string, error) {
 		return "", fmt.Errorf("unexpected error occurred: %w", err)
 	}
 
-	// Extract and return transaction references
+	fmt.Println("Response:")
+	// Extract and return transaction reference
+	var txRef string
 	if resp != nil && resp.Msg.Ref != nil {
-		var refs []string
-		fmt.Println("Response:")
-		for i, ref := range resp.Msg.GetRef() {
-			hexRef := hex.EncodeToString(ref)
-			refs = append(refs, hexRef)
-			fmt.Printf("  Ref[%d]: %s\n", i, hexRef)
-		}
-		return refs[0], nil
+		txRef = hex.EncodeToString(resp.Msg.GetRef())
+		fmt.Printf("  TxRef: %s\n", txRef)
 	}
 
-	return "", errors.New("no references found in the response")
+	return txRef, nil
 }
 
 func readMempool(client *utxorpc.Client) {
