@@ -5,8 +5,8 @@ filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/bits-and-blooms/bitset v1.20.0 h1:2F+rfL86jE2d/bmw7OhqUg2Sj/1rURkBn3MdfoPyRVU=
 github.com/bits-and-blooms/bitset v1.20.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
-github.com/blinklabs-io/gouroboros v0.139.0 h1:ctoHFEuXhJlMcUC1fe5x6IX1tqZnS/BAaBDeHiXskeU=
-github.com/blinklabs-io/gouroboros v0.139.0/go.mod h1:FxKQNNNRQN5F/Cl4pnW7SHhpPo7fD57mTPGo4N9ulnY=
+github.com/blinklabs-io/gouroboros v0.140.0 h1:dFK2iunkTflCI2hlDSGZJJ7JerYhpdE41HnBUVvjj9E=
+github.com/blinklabs-io/gouroboros v0.140.0/go.mod h1:FxKQNNNRQN5F/Cl4pnW7SHhpPo7fD57mTPGo4N9ulnY=
 github.com/blinklabs-io/plutigo v0.0.13 h1:JztPigFmknQmQ3Ti1+mdTY96ihOUDh6wJ3pPnN2YYBU=
 github.com/blinklabs-io/plutigo v0.0.13/go.mod h1:CoNpHHFifPV21KfnHlP3hEFOVj3yF6zgV5OPr058+Do=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
