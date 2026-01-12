@@ -33,6 +33,10 @@ func main() {
 	// Run them all
 	readParams(client)
 	fmt.Println()
+	readEraSummary(client)
+	fmt.Println()
+	readGenesis(client)
+	fmt.Println()
 	readUtxo(
 		client,
 		"24efe5f12d1d93bb419cfb84338d6602dfe78c614b489edb72df0594a077431c",
@@ -92,6 +96,69 @@ func readParams(client *utxorpc.Client) {
 	}
 	if resp.Msg.GetValues() != nil {
 		fmt.Printf("Cardano: %+v\n", resp.Msg.GetValues())
+	}
+}
+
+func readEraSummary(client *utxorpc.Client) {
+	fmt.Println("getting era summary")
+	req := &query.ReadEraSummaryRequest{
+		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
+	}
+	resp, err := client.UtxorpcClient.ReadEraSummary(connect.NewRequest(req))
+	if err != nil {
+		sdk.HandleError(err)
+		return
+	}
+	fmt.Printf("Era Summary Response: %+v\n", resp.Msg)
+
+	if cardanoSummary := resp.Msg.GetCardano(); cardanoSummary != nil {
+		for _, summary := range cardanoSummary.GetSummaries() {
+			fmt.Printf("Era: %s\n", summary.GetName())
+			fmt.Printf("  Start: %s\n", formatEraBoundary(summary.GetStart()))
+			fmt.Printf("  End: %s\n", formatEraBoundary(summary.GetEnd()))
+		}
+	} else {
+		fmt.Println("No Cardano era summary returned")
+	}
+}
+
+func formatEraBoundary(boundary *cardano.EraBoundary) string {
+	if boundary == nil {
+		return "n/a"
+	}
+	return fmt.Sprintf(
+		"slot=%d epoch=%d time_ms=%d",
+		boundary.GetSlot(),
+		boundary.GetEpoch(),
+		boundary.GetTime(),
+	)
+}
+
+func readGenesis(client *utxorpc.Client) {
+	fmt.Println("getting genesis config")
+	req := &query.ReadGenesisRequest{
+		FieldMask: &fieldmaskpb.FieldMask{
+			Paths: []string{
+				// "cardano",
+			},
+		},
+	}
+	resp, err := client.UtxorpcClient.ReadGenesis(connect.NewRequest(req))
+	if err != nil {
+		sdk.HandleError(err)
+		return
+	}
+
+	if resp.Msg.GetGenesis() != nil {
+		fmt.Printf("Genesis Hash: %x\n", resp.Msg.GetGenesis())
+	}
+	if cardanoGenesis := resp.Msg.GetCardano(); cardanoGenesis != nil {
+		fmt.Printf("Cardano Genesis: %+v\n", cardanoGenesis)
+		fmt.Printf("Cardano Network ID: %s\n", cardanoGenesis.GetNetworkId())
+		fmt.Printf("Cardano Network Magic: %d\n", cardanoGenesis.GetNetworkMagic())
+		fmt.Printf("Cardano Epoch Length: %d\n", cardanoGenesis.GetEpochLength())
+		fmt.Printf("Cardano Slot Length (ms): %d\n", cardanoGenesis.GetSlotLength())
+		fmt.Printf("Cardano System Start: %s\n", cardanoGenesis.GetSystemStart())
 	}
 }
 
