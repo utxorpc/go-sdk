@@ -323,7 +323,7 @@ func (c *Client) WaitForTransaction(
 ) (*connect.ServerStreamForClient[submit.WaitForTxResponse], error) {
 	ctx := context.Background()
 	// Decode the transaction references from hex
-	var decodedRefs [][]byte
+	decodedRefs := make([][]byte, 0, 1)
 	refBytes, err := hex.DecodeString(txRef)
 	if err != nil {
 		return nil, fmt.Errorf(
