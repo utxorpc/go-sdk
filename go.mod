@@ -9,7 +9,7 @@ toolchain go1.24.1
 
 require (
 	connectrpc.com/connect v1.19.1
-	github.com/blinklabs-io/gouroboros v0.146.0
+	github.com/blinklabs-io/gouroboros v0.148.0
 	github.com/utxorpc/go-codegen v0.18.1
 	golang.org/x/net v0.48.0
 	google.golang.org/protobuf v1.36.11
@@ -25,7 +25,7 @@ require (
 	github.com/consensys/gnark-crypto v0.19.2 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
-	github.com/ethereum/go-ethereum v1.16.7 // indirect
+	github.com/ethereum/go-ethereum v1.16.8 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
