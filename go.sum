@@ -7,8 +7,8 @@ github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/bits-and-blooms/bitset v1.20.0 h1:2F+rfL86jE2d/bmw7OhqUg2Sj/1rURkBn3MdfoPyRVU=
 github.com/bits-and-blooms/bitset v1.20.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
-github.com/blinklabs-io/gouroboros v0.148.0 h1:B8+3oLKk+vSUim3arbl1euf39oCvfwZGgSAwVEydgck=
-github.com/blinklabs-io/gouroboros v0.148.0/go.mod h1:UqNKi2y70+0s+0QxSwox+pdB++lq2RqUSWtErngs8NQ=
+github.com/blinklabs-io/gouroboros v0.149.0 h1:Kgnnn6l/ogwdOwppqRzZi8EGtNu0B+/4hjvkgSL/Wes=
+github.com/blinklabs-io/gouroboros v0.149.0/go.mod h1:UqNKi2y70+0s+0QxSwox+pdB++lq2RqUSWtErngs8NQ=
 github.com/blinklabs-io/plutigo v0.0.18 h1:axw0QVrdiqEjt+ssKs5zY2ycogZ+j5r0IETHkAda+8Q=
 github.com/blinklabs-io/plutigo v0.0.18/go.mod h1:L72ik2SFGruMCxqI5nnuMMz0TwSu9Fk+MekKynr3SPQ=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
