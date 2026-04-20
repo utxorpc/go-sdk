@@ -7,7 +7,7 @@ go 1.25.7
 
 require (
 	connectrpc.com/connect v1.19.1
-	github.com/blinklabs-io/gouroboros v0.163.5
+	github.com/blinklabs-io/gouroboros v0.165.2
 	github.com/utxorpc/go-codegen v0.18.1
 	golang.org/x/net v0.53.0
 	google.golang.org/protobuf v1.36.11
@@ -16,15 +16,15 @@ require (
 require (
 	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6 // indirect
 	github.com/bits-and-blooms/bitset v1.24.4 // indirect
-	github.com/blinklabs-io/plutigo v0.1.0 // indirect
+	github.com/blinklabs-io/plutigo v0.1.8 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.6 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.6 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/consensys/gnark-crypto v0.20.1 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
-	github.com/ethereum/go-ethereum v1.17.1 // indirect
-	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
+	github.com/ethereum/go-ethereum v1.17.2 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
