@@ -7,7 +7,7 @@ go 1.25.7
 
 require (
 	connectrpc.com/connect v1.19.2
-	github.com/blinklabs-io/gouroboros v0.166.0
+	github.com/blinklabs-io/gouroboros v0.166.1
 	github.com/utxorpc/go-codegen v0.18.1
 	golang.org/x/net v0.53.0
 	google.golang.org/protobuf v1.36.11
