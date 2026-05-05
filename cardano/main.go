@@ -8,11 +8,11 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/watch"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/cardano"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/submit"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/watch"
 	sdk "github.com/utxorpc/go-sdk"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )

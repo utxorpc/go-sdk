@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	sync "github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
+	sync "github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
 	"github.com/utxorpc/go-sdk"
 	utxorpc "github.com/utxorpc/go-sdk/cardano"
 )

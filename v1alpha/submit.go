@@ -1,11 +1,11 @@
-package sdk
+package v1alpha
 
 import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/submit"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/submit/submitconnect"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/submit/submitconnect"
 )
 
 type SubmitServiceClient = submitconnect.SubmitServiceClient

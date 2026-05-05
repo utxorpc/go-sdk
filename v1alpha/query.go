@@ -1,11 +1,11 @@
-package sdk
+package v1alpha
 
 import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query/queryconnect"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query/queryconnect"
 )
 
 type QueryServiceClient = queryconnect.QueryServiceClient
