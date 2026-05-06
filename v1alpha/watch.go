@@ -1,11 +1,11 @@
-package sdk
+package v1alpha
 
 import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/watch"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/watch/watchconnect"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/watch"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/watch/watchconnect"
 )
 
 type WatchServiceClient = watchconnect.WatchServiceClient

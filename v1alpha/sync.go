@@ -1,11 +1,11 @@
-package sdk
+package v1alpha
 
 import (
 	"context"
 
 	"connectrpc.com/connect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync/syncconnect"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync"
+	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/sync/syncconnect"
 )
 
 type SyncServiceClient = syncconnect.SyncServiceClient

@@ -8,8 +8,8 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/blinklabs-io/gouroboros/ledger/common"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/cardano"
-	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/cardano"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
 	"github.com/utxorpc/go-sdk"
 	utxorpc "github.com/utxorpc/go-sdk/cardano"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -315,10 +315,9 @@ func searchUtxos(
 						string(asset.GetName()),
 					)
 					fmt.Printf(
-						"        Output Coin: %v\n",
-						asset.GetOutputCoin(),
+						"        Quantity: %v\n",
+						asset.GetQuantity(),
 					)
-					fmt.Printf("        Mint Coin: %v\n", asset.GetMintCoin())
 				}
 			}
 		}
@@ -374,10 +373,9 @@ func getUtxosByAddress(
 						string(asset.GetName()),
 					)
 					fmt.Printf(
-						"        Output Coin: %v\n",
-						asset.GetOutputCoin(),
+						"        Quantity: %v\n",
+						asset.GetQuantity(),
 					)
-					fmt.Printf("        Mint Coin: %v\n", asset.GetMintCoin())
 				}
 			}
 		}

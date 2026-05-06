@@ -42,7 +42,7 @@ import (
     "fmt"
 
     "connectrpc.com/connect"
-    "github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
+    "github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
     "github.com/utxorpc/go-sdk"
 )
 
@@ -109,6 +109,21 @@ func main() {
     }
 }
 ```
+
+### Using v1alpha (Legacy)
+
+The previous `v1alpha` UTxO RPC version remains available under the `v1alpha` subpackage for users targeting servers that have not yet upgraded. Migration from earlier SDK releases is a one-line import change:
+
+```go
+import (
+    sdk "github.com/utxorpc/go-sdk/v1alpha"
+    "github.com/utxorpc/go-codegen/utxorpc/v1alpha/query"
+)
+```
+
+The `v1alpha` subpackage exposes the same `UtxorpcClient`, options, wrapper methods, and `HandleError` utility as the top-level package — only the underlying protobuf types differ.
+
+The `cardano` helper subpackage is `v1beta` only; there is no v1alpha cardano helper.
 
 ## Client Configuration
 
