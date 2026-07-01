@@ -14,6 +14,7 @@ import (
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/watch"
 	sdk "github.com/utxorpc/go-sdk"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
@@ -161,8 +162,8 @@ func (c *Client) GetUtxosByAddressWithContext(
 				},
 			},
 		},
-		MaxItems:   100, // May need adjustment
-		StartToken: "",  // For pagination, start at first page
+		MaxItems:   proto.Int32(100), // May need adjustment
+		StartToken: proto.String(""), // For pagination, start at first page
 	}
 	req := connect.NewRequest(queryReq)
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
@@ -223,8 +224,8 @@ func (c *Client) GetUtxosByAddressWithAssetWithContext(
 				},
 			},
 		},
-		MaxItems:   100, // May need adjustment
-		StartToken: "",  // For pagination, start at first page
+		MaxItems:   proto.Int32(100), // May need adjustment
+		StartToken: proto.String(""), // For pagination, start at first page
 	}
 	req := connect.NewRequest(queryReq)
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
@@ -278,8 +279,8 @@ func (c *Client) GetUtxosByAssetWithContext(
 				},
 			},
 		},
-		MaxItems:   100, // May need adjustment
-		StartToken: "",  // For pagination, start at first page
+		MaxItems:   proto.Int32(100), // May need adjustment
+		StartToken: proto.String(""), // For pagination, start at first page
 	}
 	req := connect.NewRequest(queryReq)
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)

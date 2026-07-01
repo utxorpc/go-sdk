@@ -12,6 +12,7 @@ import (
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
 	"github.com/utxorpc/go-sdk"
 	utxorpc "github.com/utxorpc/go-sdk/cardano"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
@@ -276,8 +277,8 @@ func searchUtxos(
 	searchRequest := &query.SearchUtxosRequest{
 		Predicate:  utxoPredicate,
 		FieldMask:  fieldMask,
-		MaxItems:   100, // Adjust based on your requirements
-		StartToken: "",  // For pagination; empty for the first page
+		MaxItems:   proto.Int32(100), // Adjust based on your requirements
+		StartToken: proto.String(""), // For pagination; empty for the first page
 	}
 
 	fmt.Printf("searching utxos: address: %s, policy: %s, asset: %s\n", rawAddress, policyID, assetName)
