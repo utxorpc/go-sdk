@@ -8,12 +8,18 @@ import (
 	"github.com/utxorpc/go-codegen/utxorpc/v1alpha/query/queryconnect"
 )
 
+// QueryServiceClient is the generated Connect client for the v1alpha Query
+// service.
 type QueryServiceClient = queryconnect.QueryServiceClient
 
+// NewQueryServiceClient is the free-function form of
+// [(*UtxorpcClient).NewQueryServiceClient].
 func NewQueryServiceClient(u *UtxorpcClient) QueryServiceClient {
 	return u.NewQueryServiceClient()
 }
 
+// NewQueryServiceClient returns a fresh [QueryServiceClient] bound to this
+// client's HTTP client and base URL.
 func (u *UtxorpcClient) NewQueryServiceClient() QueryServiceClient {
 	return queryconnect.NewQueryServiceClient(
 		u.httpClient,
@@ -22,10 +28,12 @@ func (u *UtxorpcClient) NewQueryServiceClient() QueryServiceClient {
 	)
 }
 
+// QueryService returns the [QueryServiceClient] held in [UtxorpcClient.Query].
 func (u *UtxorpcClient) QueryService() QueryServiceClient {
 	return u.Query
 }
 
+// ReadData calls [(*UtxorpcClient).ReadDataWithContext] with a background context.
 func (u *UtxorpcClient) ReadData(
 	req *connect.Request[query.ReadDataRequest],
 ) (*connect.Response[query.ReadDataResponse], error) {
@@ -33,6 +41,8 @@ func (u *UtxorpcClient) ReadData(
 	return u.ReadDataWithContext(ctx, req)
 }
 
+// ReadDataWithContext invokes Query.ReadData after injecting stored headers
+// into the request.
 func (u *UtxorpcClient) ReadDataWithContext(
 	ctx context.Context,
 	req *connect.Request[query.ReadDataRequest],
@@ -41,6 +51,7 @@ func (u *UtxorpcClient) ReadDataWithContext(
 	return u.Query.ReadData(ctx, req)
 }
 
+// ReadEraSummary calls [(*UtxorpcClient).ReadEraSummaryWithContext] with a background context.
 func (u *UtxorpcClient) ReadEraSummary(
 	req *connect.Request[query.ReadEraSummaryRequest],
 ) (*connect.Response[query.ReadEraSummaryResponse], error) {
@@ -48,6 +59,8 @@ func (u *UtxorpcClient) ReadEraSummary(
 	return u.ReadEraSummaryWithContext(ctx, req)
 }
 
+// ReadEraSummaryWithContext invokes Query.ReadEraSummary after injecting
+// stored headers into the request.
 func (u *UtxorpcClient) ReadEraSummaryWithContext(
 	ctx context.Context,
 	req *connect.Request[query.ReadEraSummaryRequest],
@@ -56,6 +69,7 @@ func (u *UtxorpcClient) ReadEraSummaryWithContext(
 	return u.Query.ReadEraSummary(ctx, req)
 }
 
+// ReadGenesis calls [(*UtxorpcClient).ReadGenesisWithContext] with a background context.
 func (u *UtxorpcClient) ReadGenesis(
 	req *connect.Request[query.ReadGenesisRequest],
 ) (*connect.Response[query.ReadGenesisResponse], error) {
@@ -63,6 +77,8 @@ func (u *UtxorpcClient) ReadGenesis(
 	return u.ReadGenesisWithContext(ctx, req)
 }
 
+// ReadGenesisWithContext invokes Query.ReadGenesis after injecting stored
+// headers into the request.
 func (u *UtxorpcClient) ReadGenesisWithContext(
 	ctx context.Context,
 	req *connect.Request[query.ReadGenesisRequest],
@@ -71,6 +87,7 @@ func (u *UtxorpcClient) ReadGenesisWithContext(
 	return u.Query.ReadGenesis(ctx, req)
 }
 
+// ReadParams calls [(*UtxorpcClient).ReadParamsWithContext] with a background context.
 func (u *UtxorpcClient) ReadParams(
 	req *connect.Request[query.ReadParamsRequest],
 ) (*connect.Response[query.ReadParamsResponse], error) {
@@ -78,6 +95,8 @@ func (u *UtxorpcClient) ReadParams(
 	return u.ReadParamsWithContext(ctx, req)
 }
 
+// ReadParamsWithContext invokes Query.ReadParams after injecting stored
+// headers into the request.
 func (u *UtxorpcClient) ReadParamsWithContext(
 	ctx context.Context,
 	req *connect.Request[query.ReadParamsRequest],
@@ -86,6 +105,7 @@ func (u *UtxorpcClient) ReadParamsWithContext(
 	return u.Query.ReadParams(ctx, req)
 }
 
+// ReadTx calls [(*UtxorpcClient).ReadTxWithContext] with a background context.
 func (u *UtxorpcClient) ReadTx(
 	req *connect.Request[query.ReadTxRequest],
 ) (*connect.Response[query.ReadTxResponse], error) {
@@ -93,6 +113,8 @@ func (u *UtxorpcClient) ReadTx(
 	return u.ReadTxWithContext(ctx, req)
 }
 
+// ReadTxWithContext invokes Query.ReadTx after injecting stored headers
+// into the request.
 func (u *UtxorpcClient) ReadTxWithContext(
 	ctx context.Context,
 	req *connect.Request[query.ReadTxRequest],
@@ -101,6 +123,7 @@ func (u *UtxorpcClient) ReadTxWithContext(
 	return u.Query.ReadTx(ctx, req)
 }
 
+// ReadUtxos calls [(*UtxorpcClient).ReadUtxosWithContext] with a background context.
 func (u *UtxorpcClient) ReadUtxos(
 	req *connect.Request[query.ReadUtxosRequest],
 ) (*connect.Response[query.ReadUtxosResponse], error) {
@@ -108,6 +131,8 @@ func (u *UtxorpcClient) ReadUtxos(
 	return u.ReadUtxosWithContext(ctx, req)
 }
 
+// ReadUtxosWithContext invokes Query.ReadUtxos after injecting stored
+// headers into the request.
 func (u *UtxorpcClient) ReadUtxosWithContext(
 	ctx context.Context,
 	req *connect.Request[query.ReadUtxosRequest],
@@ -116,6 +141,7 @@ func (u *UtxorpcClient) ReadUtxosWithContext(
 	return u.Query.ReadUtxos(ctx, req)
 }
 
+// SearchUtxos calls [(*UtxorpcClient).SearchUtxosWithContext] with a background context.
 func (u *UtxorpcClient) SearchUtxos(
 	req *connect.Request[query.SearchUtxosRequest],
 ) (*connect.Response[query.SearchUtxosResponse], error) {
@@ -123,6 +149,8 @@ func (u *UtxorpcClient) SearchUtxos(
 	return u.SearchUtxosWithContext(ctx, req)
 }
 
+// SearchUtxosWithContext invokes Query.SearchUtxos after injecting stored
+// headers into the request.
 func (u *UtxorpcClient) SearchUtxosWithContext(
 	ctx context.Context,
 	req *connect.Request[query.SearchUtxosRequest],

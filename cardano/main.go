@@ -17,21 +17,31 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
+// Client is a high-level Cardano client. It embeds a generic
+// [*sdk.UtxorpcClient] (accessible via the UtxorpcClient field) for header
+// management and direct service access, and adds Cardano-specific helpers
+// that build the appropriate request types and decode common input formats.
 type Client struct {
 	UtxorpcClient *sdk.UtxorpcClient
 }
 
+// NewClient constructs a Cardano [Client] backed by a fresh
+// [*sdk.UtxorpcClient] configured with the given SDK options.
 func NewClient(options ...sdk.ClientOption) *Client {
 	c := &Client{}
 	c.UtxorpcClient = sdk.NewClient(options...)
 	return c
 }
 
+// GetProtocolParameters calls [Client.GetProtocolParametersWithContext] with a background context.
 func (c *Client) GetProtocolParameters() (*connect.Response[query.ReadParamsResponse], error) {
 	ctx := context.Background()
 	return c.GetProtocolParametersWithContext(ctx)
 }
 
+// GetProtocolParametersWithContext fetches the current protocol parameters
+// via Query.ReadParams. Equivalent to building an empty
+// [query.ReadParamsRequest] and calling the generic client.
 func (c *Client) GetProtocolParametersWithContext(
 	ctx context.Context,
 ) (*connect.Response[query.ReadParamsResponse], error) {
@@ -40,6 +50,7 @@ func (c *Client) GetProtocolParametersWithContext(
 	return c.UtxorpcClient.Query.ReadParams(ctx, req)
 }
 
+// GetUtxoByRef calls [Client.GetUtxoByRefWithContext] with a background context.
 func (c *Client) GetUtxoByRef(
 	txHashStr string,
 	txIndex uint32,
@@ -47,6 +58,9 @@ func (c *Client) GetUtxoByRef(
 	return c.GetUtxoByRefWithContext(context.Background(), txHashStr, txIndex)
 }
 
+// GetUtxoByRefWithContext reads a single UTxO by transaction reference.
+// txHashStr is decoded as hex first; if hex decoding fails, it is decoded
+// as standard base64. An error is returned if neither succeeds.
 func (c *Client) GetUtxoByRefWithContext(
 	ctx context.Context,
 	txHashStr string,
@@ -73,6 +87,13 @@ func (c *Client) GetUtxoByRefWithContext(
 	return c.UtxorpcClient.ReadUtxosWithContext(ctx, req)
 }
 
+// EvaluateTransaction performs a dry run of a transaction without
+// broadcasting it. txCbor is the full signed transaction CBOR encoded as a
+// hex string; the response carries execution units and validation results.
+//
+// Use [Client.EvaluateTransactionWithContext] when you need to supply your
+// own [submit.EvalTxRequest] (e.g. to evaluate something other than a raw
+// hex CBOR transaction).
 func (c *Client) EvaluateTransaction(
 	txCbor string,
 ) (*connect.Response[submit.EvalTxResponse], error) {
@@ -97,6 +118,8 @@ func (c *Client) EvaluateTransaction(
 	return c.EvaluateTransactionWithContext(ctx, req)
 }
 
+// EvaluateTransactionWithContext invokes Submit.EvalTx with a caller-supplied
+// request and the given context. Stored headers are injected before the call.
 func (c *Client) EvaluateTransactionWithContext(
 	ctx context.Context,
 	txReq *submit.EvalTxRequest,
@@ -106,11 +129,14 @@ func (c *Client) EvaluateTransactionWithContext(
 	return c.UtxorpcClient.Submit.EvalTx(ctx, req)
 }
 
+// GetMempoolTransactions calls [Client.GetMempoolTransactionsWithContext] with a background context.
 func (c *Client) GetMempoolTransactions() (*connect.Response[submit.ReadMempoolResponse], error) {
 	ctx := context.Background()
 	return c.GetMempoolTransactionsWithContext(ctx)
 }
 
+// GetMempoolTransactionsWithContext returns a snapshot of pending mempool
+// transactions via Submit.ReadMempool.
 func (c *Client) GetMempoolTransactionsWithContext(
 	ctx context.Context,
 ) (*connect.Response[submit.ReadMempoolResponse], error) {
@@ -119,12 +145,15 @@ func (c *Client) GetMempoolTransactionsWithContext(
 	return c.UtxorpcClient.Submit.ReadMempool(ctx, req)
 }
 
+// GetUtxosByRefs calls [Client.GetUtxosByRefsWithContext] with a background context.
 func (c *Client) GetUtxosByRefs(
 	refs []*query.TxoRef,
 ) (*connect.Response[query.ReadUtxosResponse], error) {
 	return c.GetUtxosByRefsWithContext(context.Background(), refs)
 }
 
+// GetUtxosByRefsWithContext reads multiple UTxOs in one call via
+// Query.ReadUtxos. Returns an error if refs is empty.
 func (c *Client) GetUtxosByRefsWithContext(
 	ctx context.Context,
 	refs []*query.TxoRef,
@@ -138,12 +167,18 @@ func (c *Client) GetUtxosByRefsWithContext(
 	return c.UtxorpcClient.ReadUtxosWithContext(ctx, req)
 }
 
+// GetUtxosByAddress calls [Client.GetUtxosByAddressWithContext] with a background context.
 func (c *Client) GetUtxosByAddress(
 	address []byte,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
 	return c.GetUtxosByAddressWithContext(context.Background(), address)
 }
 
+// GetUtxosByAddressWithContext searches for UTxOs locked at an exact Cardano
+// address via Query.SearchUtxos. The address must be supplied as raw bytes;
+// bech32 strings must be decoded by the caller. The first page of up to 100
+// results is returned; for full pagination use the generic
+// [(*sdk.UtxorpcClient).SearchUtxos] directly.
 func (c *Client) GetUtxosByAddressWithContext(
 	ctx context.Context,
 	address []byte,
@@ -168,6 +203,8 @@ func (c *Client) GetUtxosByAddressWithContext(
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
 
+// GetUtxosByAddressWithAsset calls [Client.GetUtxosByAddressWithAssetWithContext]
+// with a background context.
 func (c *Client) GetUtxosByAddressWithAsset(
 	addressBytes []byte,
 	policyIdBytes []byte,
@@ -181,6 +218,11 @@ func (c *Client) GetUtxosByAddressWithAsset(
 	)
 }
 
+// GetUtxosByAddressWithAssetWithContext searches for UTxOs at the given
+// address that hold a matching native asset. policyIdBytes and assetNameBytes
+// are raw bytes; either may be empty to widen the match (policy-only,
+// asset-name-only, or both empty for any UTxO at the address). Returns the
+// first page of up to 100 results.
 func (c *Client) GetUtxosByAddressWithAssetWithContext(
 	ctx context.Context,
 	addressBytes []byte,
@@ -230,6 +272,7 @@ func (c *Client) GetUtxosByAddressWithAssetWithContext(
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
 
+// GetUtxosByAsset calls [Client.GetUtxosByAssetWithContext] with a background context.
 func (c *Client) GetUtxosByAsset(
 	policyIdBytes []byte,
 	assetNameBytes []byte,
@@ -241,6 +284,10 @@ func (c *Client) GetUtxosByAsset(
 	)
 }
 
+// GetUtxosByAssetWithContext searches for UTxOs holding a native asset
+// across all addresses. policyIdBytes and assetNameBytes are raw bytes; at
+// least one must be non-nil — passing nil for both returns an error.
+// Returns the first page of up to 100 results.
 func (c *Client) GetUtxosByAssetWithContext(
 	ctx context.Context,
 	policyIdBytes []byte,
@@ -285,6 +332,12 @@ func (c *Client) GetUtxosByAssetWithContext(
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
 
+// SubmitTransaction broadcasts a signed transaction. txCbor is the full
+// signed transaction CBOR encoded as a hex string; the response carries the
+// resulting transaction reference.
+//
+// Use [Client.SubmitTransactionWithContext] when you need to supply your own
+// [submit.SubmitTxRequest] (e.g. a non-raw transaction shape).
 func (c *Client) SubmitTransaction(
 	txCbor string,
 ) (*connect.Response[submit.SubmitTxResponse], error) {
@@ -309,6 +362,8 @@ func (c *Client) SubmitTransaction(
 	return c.SubmitTransactionWithContext(ctx, req)
 }
 
+// SubmitTransactionWithContext invokes Submit.SubmitTx with a caller-supplied
+// request and the given context. Stored headers are injected before the call.
 func (c *Client) SubmitTransactionWithContext(
 	ctx context.Context,
 	txReq *submit.SubmitTxRequest,
@@ -318,6 +373,12 @@ func (c *Client) SubmitTransactionWithContext(
 	return c.UtxorpcClient.Submit.SubmitTx(ctx, req)
 }
 
+// WaitForTransaction opens a server stream that emits stage transitions
+// (e.g. mempool → confirmed) for the given transaction reference. txRef is a
+// hex-encoded transaction hash. The caller must close the returned stream.
+//
+// Use [Client.WaitForTransactionWithContext] to wait for multiple references
+// or when you need a [context.Context].
 func (c *Client) WaitForTransaction(
 	txRef string,
 ) (*connect.ServerStreamForClient[submit.WaitForTxResponse], error) {
@@ -341,6 +402,8 @@ func (c *Client) WaitForTransaction(
 	return c.WaitForTransactionWithContext(ctx, req)
 }
 
+// WaitForTransactionWithContext invokes Submit.WaitForTx with a caller-supplied
+// request and the given context. Stored headers are injected before the call.
 func (c *Client) WaitForTransactionWithContext(
 	ctx context.Context,
 	txReq *submit.WaitForTxRequest,
@@ -350,6 +413,8 @@ func (c *Client) WaitForTransactionWithContext(
 	return c.UtxorpcClient.Submit.WaitForTx(ctx, req)
 }
 
+// WatchMempoolTransactions calls
+// [Client.WatchMempoolTransactionsWithContext] with a background context.
 func (c *Client) WatchMempoolTransactions() (
 	*connect.ServerStreamForClient[submit.WatchMempoolResponse],
 	error,
@@ -358,6 +423,9 @@ func (c *Client) WatchMempoolTransactions() (
 	return c.WatchMempoolTransactionsWithContext(ctx)
 }
 
+// WatchMempoolTransactionsWithContext opens a server stream of mempool
+// Apply / Undo events via Submit.WatchMempool. The caller must close the
+// returned stream.
 func (c *Client) WatchMempoolTransactionsWithContext(ctx context.Context) (
 	*connect.ServerStreamForClient[submit.WatchMempoolResponse],
 	error,
@@ -390,6 +458,10 @@ func syncIntersect(blockHashStr string, blockIndex int64) []*sync.BlockRef {
 	return intersect
 }
 
+// GetBlockByRef fetches a block via Sync.FetchBlock. blockHashStr is a hex
+// block hash (empty string to omit) and blockIndex is the slot (-1 to omit).
+// If both are omitted the request carries no intersect and the server's
+// default behavior applies.
 func (c *Client) GetBlockByRef(
 	blockHashStr string,
 	blockIndex int64,
@@ -399,6 +471,8 @@ func (c *Client) GetBlockByRef(
 	return c.GetBlockByRefWithContext(ctx, req)
 }
 
+// GetBlockByRefWithContext invokes Sync.FetchBlock with a caller-supplied
+// request and the given context. Stored headers are injected before the call.
 func (c *Client) GetBlockByRefWithContext(
 	ctx context.Context,
 	blockReq *sync.FetchBlockRequest,
@@ -408,6 +482,10 @@ func (c *Client) GetBlockByRefWithContext(
 	return c.UtxorpcClient.Sync.FetchBlock(ctx, req)
 }
 
+// WatchBlocksByRef opens a server stream of chain-tip events
+// (Apply / Undo / Reset) starting from the given intersect point.
+// blockHashStr is a hex block hash (empty string to omit) and blockIndex is
+// the slot (-1 to omit). The caller must close the returned stream.
 func (c *Client) WatchBlocksByRef(
 	blockHashStr string,
 	blockIndex int64,
@@ -419,6 +497,8 @@ func (c *Client) WatchBlocksByRef(
 	return c.WatchBlocksByRefWithContext(ctx, req)
 }
 
+// WatchBlocksByRefWithContext invokes Sync.FollowTip with a caller-supplied
+// request and the given context. Stored headers are injected before the call.
 func (c *Client) WatchBlocksByRefWithContext(
 	ctx context.Context,
 	blockReq *sync.FollowTipRequest,
@@ -428,10 +508,13 @@ func (c *Client) WatchBlocksByRefWithContext(
 	return c.UtxorpcClient.Sync.FollowTip(ctx, req)
 }
 
+// GetTip calls [Client.GetTipWithContext] with a background context.
 func (c *Client) GetTip() (*connect.Response[sync.ReadTipResponse], error) {
 	return c.GetTipWithContext(context.Background())
 }
 
+// GetTipWithContext returns the current chain tip via Sync.ReadTip. Returns
+// an error if the server replies with an empty tip.
 func (c *Client) GetTipWithContext(
 	ctx context.Context,
 ) (*connect.Response[sync.ReadTipResponse], error) {
@@ -450,12 +533,18 @@ func (c *Client) GetTipWithContext(
 	return tipResp, nil
 }
 
+// ReadBlock calls [Client.ReadBlockWithContext] with a background context.
 func (c *Client) ReadBlock(
 	blockRef *sync.BlockRef,
 ) (*connect.Response[sync.FetchBlockResponse], error) {
 	return c.ReadBlockWithContext(context.Background(), blockRef)
 }
 
+// ReadBlockWithContext fetches a single block via Sync.FetchBlock and
+// validates that the response contains a Cardano block with a non-nil
+// header. Returns an error if the response is empty, missing a Cardano
+// chain block, or the header is nil; non-Cardano chain blocks return a
+// "unknown or unsupported chain type" error.
 func (c *Client) ReadBlockWithContext(
 	ctx context.Context,
 	blockRef *sync.BlockRef,
@@ -514,6 +603,10 @@ func watchIntersect(blockHashStr string, blockIndex int64) []*watch.BlockRef {
 	return intersect
 }
 
+// WatchTransaction opens a server stream of transaction events via
+// Watch.WatchTx, starting from the given intersect point. blockHashStr is a
+// hex block hash (empty string to omit) and blockIndex is the slot (-1 to
+// omit). The caller must close the returned stream.
 func (c *Client) WatchTransaction(
 	blockHashStr string,
 	blockIndex int64,
@@ -525,6 +618,8 @@ func (c *Client) WatchTransaction(
 	return c.WatchTransactionWithContext(ctx, req)
 }
 
+// WatchTransactionWithContext invokes Watch.WatchTx with a caller-supplied
+// request and the given context. Stored headers are injected before the call.
 func (c *Client) WatchTransactionWithContext(
 	ctx context.Context,
 	watchReq *watch.WatchTxRequest,
