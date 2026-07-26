@@ -29,6 +29,24 @@ func (u *UtxorpcClient) NewSyncServiceClient() SyncServiceClient {
 	)
 }
 
+// DumpHistory calls [(*UtxorpcClient).DumpHistoryWithContext] with a background context.
+func (u *UtxorpcClient) DumpHistory(
+	req *connect.Request[sync.DumpHistoryRequest],
+) (*connect.Response[sync.DumpHistoryResponse], error) {
+	ctx := context.Background()
+	return u.DumpHistoryWithContext(ctx, req)
+}
+
+// DumpHistoryWithContext invokes Sync.DumpHistory after injecting stored
+// headers into the request. Returns historical blocks matching the request.
+func (u *UtxorpcClient) DumpHistoryWithContext(
+	ctx context.Context,
+	req *connect.Request[sync.DumpHistoryRequest],
+) (*connect.Response[sync.DumpHistoryResponse], error) {
+	u.AddHeadersToRequest(req)
+	return u.Sync.DumpHistory(ctx, req)
+}
+
 // FetchBlock calls [(*UtxorpcClient).FetchBlockWithContext] with a background context.
 func (u *UtxorpcClient) FetchBlock(
 	req *connect.Request[sync.FetchBlockRequest],

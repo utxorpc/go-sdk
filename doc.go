@@ -61,7 +61,7 @@
 // Query (read blockchain state, all WithContext variants available):
 //
 //	ReadData, ReadEraSummary, ReadGenesis, ReadParams,
-//	ReadTx, ReadUtxos, SearchUtxos
+//	ReadState, ReadTx, ReadUtxos, SearchUtxos
 //
 // Submit (transaction lifecycle):
 //
@@ -70,7 +70,7 @@
 //
 // Sync (chain follower):
 //
-//	FetchBlock, ReadTip                                — unary
+//	DumpHistory, FetchBlock, ReadTip                   — unary
 //	FollowTip                                          — server-streaming
 //
 // Watch (cross-block transaction watcher):

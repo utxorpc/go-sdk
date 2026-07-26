@@ -189,6 +189,9 @@ client.Query.ReadParams(ctx, req)
 
 // Read chain data
 client.Query.ReadData(ctx, req)
+
+// Read selected chain state
+client.Query.ReadState(ctx, req)
 ```
 
 ### Submit Service
@@ -219,6 +222,9 @@ Synchronize with the blockchain:
 ```go
 // Fetch a specific block
 client.Sync.FetchBlock(ctx, req)
+
+// Read historical blocks
+client.Sync.DumpHistory(ctx, req)
 
 // Read current chain tip
 client.Sync.ReadTip(ctx, req)

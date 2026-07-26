@@ -112,6 +112,24 @@ func (u *UtxorpcClient) ReadParamsWithContext(
 	return u.Query.ReadParams(ctx, req)
 }
 
+// ReadState calls [(*UtxorpcClient).ReadStateWithContext] with a background context.
+func (u *UtxorpcClient) ReadState(
+	req *connect.Request[query.ReadStateRequest],
+) (*connect.Response[query.ReadStateResponse], error) {
+	ctx := context.Background()
+	return u.ReadStateWithContext(ctx, req)
+}
+
+// ReadStateWithContext invokes Query.ReadState after injecting stored headers
+// into the request. Returns chain state selected by the request.
+func (u *UtxorpcClient) ReadStateWithContext(
+	ctx context.Context,
+	req *connect.Request[query.ReadStateRequest],
+) (*connect.Response[query.ReadStateResponse], error) {
+	u.AddHeadersToRequest(req)
+	return u.Query.ReadState(ctx, req)
+}
+
 // ReadTx calls [(*UtxorpcClient).ReadTxWithContext] with a background context.
 func (u *UtxorpcClient) ReadTx(
 	req *connect.Request[query.ReadTxRequest],

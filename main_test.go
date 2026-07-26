@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
+	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
 )
 
 func TestHeaderManagementAndRequestInjection(t *testing.T) {
@@ -85,8 +86,113 @@ func TestReadParamsWithContextAddsHeaders(t *testing.T) {
 	}
 }
 
+func TestReadStateWrappersAddHeadersAndCallQueryClient(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(*UtxorpcClient, *connect.Request[query.ReadStateRequest]) error
+	}{
+		{
+			name: "background context",
+			call: func(
+				client *UtxorpcClient,
+				req *connect.Request[query.ReadStateRequest],
+			) error {
+				_, err := client.ReadState(req)
+				return err
+			},
+		},
+		{
+			name: "provided context",
+			call: func(
+				client *UtxorpcClient,
+				req *connect.Request[query.ReadStateRequest],
+			) error {
+				_, err := client.ReadStateWithContext(context.Background(), req)
+				return err
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fakeQuery := &recordingQueryClient{}
+			client := NewClient(
+				WithHeaders(map[string]string{"dmtr-api-key": "secret"}),
+			)
+			client.Query = fakeQuery
+
+			if err := test.call(
+				client,
+				connect.NewRequest(&query.ReadStateRequest{}),
+			); err != nil {
+				t.Fatalf("ReadState wrapper returned error: %v", err)
+			}
+			if fakeQuery.readStateReq == nil {
+				t.Fatal("Query.ReadState was not called")
+			}
+			if got := fakeQuery.readStateReq.Header().
+				Get("dmtr-api-key"); got != "secret" {
+				t.Fatalf("dmtr-api-key header = %q, want %q", got, "secret")
+			}
+		})
+	}
+}
+
+func TestDumpHistoryWrappersAddHeadersAndCallSyncClient(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(*UtxorpcClient, *connect.Request[sync.DumpHistoryRequest]) error
+	}{
+		{
+			name: "background context",
+			call: func(
+				client *UtxorpcClient,
+				req *connect.Request[sync.DumpHistoryRequest],
+			) error {
+				_, err := client.DumpHistory(req)
+				return err
+			},
+		},
+		{
+			name: "provided context",
+			call: func(
+				client *UtxorpcClient,
+				req *connect.Request[sync.DumpHistoryRequest],
+			) error {
+				_, err := client.DumpHistoryWithContext(context.Background(), req)
+				return err
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fakeSync := &recordingSyncClient{}
+			client := NewClient(
+				WithHeaders(map[string]string{"dmtr-api-key": "secret"}),
+			)
+			client.Sync = fakeSync
+
+			if err := test.call(
+				client,
+				connect.NewRequest(&sync.DumpHistoryRequest{}),
+			); err != nil {
+				t.Fatalf("DumpHistory wrapper returned error: %v", err)
+			}
+			if fakeSync.dumpHistoryReq == nil {
+				t.Fatal("Sync.DumpHistory was not called")
+			}
+			if got := fakeSync.dumpHistoryReq.Header().
+				Get("dmtr-api-key"); got != "secret" {
+				t.Fatalf("dmtr-api-key header = %q, want %q", got, "secret")
+			}
+		})
+	}
+}
+
 type recordingQueryClient struct {
 	readParamsReq *connect.Request[query.ReadParamsRequest]
+	readStateReq  *connect.Request[query.ReadStateRequest]
 }
 
 func (r *recordingQueryClient) ReadParams(
@@ -139,11 +245,47 @@ func (*recordingQueryClient) ReadEraSummary(
 	return connect.NewResponse(&query.ReadEraSummaryResponse{}), nil
 }
 
-func (*recordingQueryClient) ReadState(
-	context.Context,
-	*connect.Request[query.ReadStateRequest],
+func (r *recordingQueryClient) ReadState(
+	_ context.Context,
+	req *connect.Request[query.ReadStateRequest],
 ) (*connect.Response[query.ReadStateResponse], error) {
+	r.readStateReq = req
 	return connect.NewResponse(&query.ReadStateResponse{}), nil
 }
 
 var _ QueryServiceClient = (*recordingQueryClient)(nil)
+
+type recordingSyncClient struct {
+	dumpHistoryReq *connect.Request[sync.DumpHistoryRequest]
+}
+
+func (*recordingSyncClient) FetchBlock(
+	context.Context,
+	*connect.Request[sync.FetchBlockRequest],
+) (*connect.Response[sync.FetchBlockResponse], error) {
+	return connect.NewResponse(&sync.FetchBlockResponse{}), nil
+}
+
+func (r *recordingSyncClient) DumpHistory(
+	_ context.Context,
+	req *connect.Request[sync.DumpHistoryRequest],
+) (*connect.Response[sync.DumpHistoryResponse], error) {
+	r.dumpHistoryReq = req
+	return connect.NewResponse(&sync.DumpHistoryResponse{}), nil
+}
+
+func (*recordingSyncClient) FollowTip(
+	context.Context,
+	*connect.Request[sync.FollowTipRequest],
+) (*connect.ServerStreamForClient[sync.FollowTipResponse], error) {
+	return nil, nil
+}
+
+func (*recordingSyncClient) ReadTip(
+	context.Context,
+	*connect.Request[sync.ReadTipRequest],
+) (*connect.Response[sync.ReadTipResponse], error) {
+	return connect.NewResponse(&sync.ReadTipResponse{}), nil
+}
+
+var _ SyncServiceClient = (*recordingSyncClient)(nil)
