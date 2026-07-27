@@ -2,10 +2,12 @@ package sdk
 
 import (
 	"context"
+	"iter"
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query/queryconnect"
+	"google.golang.org/protobuf/proto"
 )
 
 // QueryServiceClient is the generated Connect client for the UTxO RPC Query
@@ -184,4 +186,52 @@ func (u *UtxorpcClient) SearchUtxosWithContext(
 ) (*connect.Response[query.SearchUtxosResponse], error) {
 	u.AddHeadersToRequest(req)
 	return u.Query.SearchUtxos(ctx, req)
+}
+
+// SearchUtxosPages calls [(*UtxorpcClient).SearchUtxosPagesWithContext] with
+// a background context.
+func (u *UtxorpcClient) SearchUtxosPages(
+	req *connect.Request[query.SearchUtxosRequest],
+) iter.Seq2[*connect.Response[query.SearchUtxosResponse], error] {
+	return u.SearchUtxosPagesWithContext(context.Background(), req)
+}
+
+// SearchUtxosPagesWithContext returns a lazy sequence of SearchUtxos pages.
+// It starts at req's start_token and follows each response's next_token until
+// no token remains. The request is cloned and is not modified.
+//
+// Each iteration yields either a response and a nil error, or a nil response
+// and the error that stopped pagination. Callers that stop iteration early
+// avoid fetching subsequent pages.
+func (u *UtxorpcClient) SearchUtxosPagesWithContext(
+	ctx context.Context,
+	req *connect.Request[query.SearchUtxosRequest],
+) iter.Seq2[*connect.Response[query.SearchUtxosResponse], error] {
+	return func(yield func(
+		*connect.Response[query.SearchUtxosResponse],
+		error,
+	) bool,
+	) {
+		queryReq := proto.Clone(req.Msg).(*query.SearchUtxosRequest)
+
+		for {
+			pageReq := connect.NewRequest(queryReq)
+			copyRequestHeaders(pageReq, req)
+
+			resp, err := u.SearchUtxosWithContext(ctx, pageReq)
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			if !yield(resp, nil) {
+				return
+			}
+
+			nextToken := resp.Msg.GetNextToken()
+			if nextToken == "" {
+				return
+			}
+			queryReq.StartToken = proto.String(nextToken)
+		}
+	}
 }

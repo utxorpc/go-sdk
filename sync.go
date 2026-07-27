@@ -2,10 +2,12 @@ package sdk
 
 import (
 	"context"
+	"iter"
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync/syncconnect"
+	"google.golang.org/protobuf/proto"
 )
 
 // SyncServiceClient is the generated Connect client for the UTxO RPC Sync
@@ -45,6 +47,54 @@ func (u *UtxorpcClient) DumpHistoryWithContext(
 ) (*connect.Response[sync.DumpHistoryResponse], error) {
 	u.AddHeadersToRequest(req)
 	return u.Sync.DumpHistory(ctx, req)
+}
+
+// DumpHistoryPages calls [(*UtxorpcClient).DumpHistoryPagesWithContext] with
+// a background context.
+func (u *UtxorpcClient) DumpHistoryPages(
+	req *connect.Request[sync.DumpHistoryRequest],
+) iter.Seq2[*connect.Response[sync.DumpHistoryResponse], error] {
+	return u.DumpHistoryPagesWithContext(context.Background(), req)
+}
+
+// DumpHistoryPagesWithContext returns a lazy sequence of DumpHistory pages.
+// It starts at req's start_token and follows each response's next_token until
+// no token remains. The request is cloned and is not modified.
+//
+// Each iteration yields either a response and a nil error, or a nil response
+// and the error that stopped pagination. Callers that stop iteration early
+// avoid fetching subsequent pages.
+func (u *UtxorpcClient) DumpHistoryPagesWithContext(
+	ctx context.Context,
+	req *connect.Request[sync.DumpHistoryRequest],
+) iter.Seq2[*connect.Response[sync.DumpHistoryResponse], error] {
+	return func(yield func(
+		*connect.Response[sync.DumpHistoryResponse],
+		error,
+	) bool,
+	) {
+		historyReq := proto.Clone(req.Msg).(*sync.DumpHistoryRequest)
+
+		for {
+			pageReq := connect.NewRequest(historyReq)
+			copyRequestHeaders(pageReq, req)
+
+			resp, err := u.DumpHistoryWithContext(ctx, pageReq)
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			if !yield(resp, nil) {
+				return
+			}
+
+			nextToken := resp.Msg.GetNextToken()
+			if nextToken == nil {
+				return
+			}
+			historyReq.StartToken = proto.Clone(nextToken).(*sync.BlockRef)
+		}
+	}
 }
 
 // FetchBlock calls [(*UtxorpcClient).FetchBlockWithContext] with a background context.

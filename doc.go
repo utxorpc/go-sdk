@@ -63,6 +63,7 @@
 //
 //	ReadData, ReadEraSummary, ReadGenesis, ReadParams,
 //	ReadState, ReadTx, ReadUtxos, SearchUtxos
+//	SearchUtxosPages                                  — lazy automatic pagination
 //
 // Submit (transaction lifecycle):
 //
@@ -72,6 +73,7 @@
 // Sync (chain follower):
 //
 //	DumpHistory, FetchBlock, ReadTip                   — unary
+//	DumpHistoryPages                                  — lazy automatic pagination
 //	FollowTip                                          — server-streaming
 //
 // Watch (cross-block transaction watcher):

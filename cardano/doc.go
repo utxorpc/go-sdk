@@ -48,6 +48,14 @@
 //	GetUtxosByAddress(addressBytes)
 //	GetUtxosByAddressWithAsset(addr, policyId, assetName)
 //	GetUtxosByAsset(policyId, assetName)        — at least one of the two required
+//	GetUtxosByAddressPages(addressBytes)        — lazy automatic pagination
+//	GetUtxosByAddressWithAssetPages(...)
+//	GetUtxosByAssetPages(...)
+//
+// UTxO search helpers accept optional [SearchOption] values. Use
+// [WithSearchMaxItems], [WithSearchStartToken], and [WithSearchFieldMask] to
+// control pagination and field selection without constructing a raw protobuf
+// request.
 //
 // Submit helpers:
 //
