@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 
 	"connectrpc.com/connect"
@@ -88,7 +89,8 @@ func submitTx(client *utxorpc.Client, txCbor string) (string, error) {
 func readMempool(client *utxorpc.Client) {
 	resp, err := client.GetMempoolTransactions()
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
+		return
 	}
 	fmt.Printf("Response: %+v\n", resp)
 }
@@ -135,7 +137,8 @@ func watchMempool(client *utxorpc.Client) {
 	fmt.Println("Connecting to utxorpc host:", client.UtxorpcClient.URL())
 	stream, err := client.WatchMempoolTransactions()
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
+		return
 	}
 
 	fmt.Println("Connected to utxorpc host, watching mempool...")
@@ -145,8 +148,27 @@ func watchMempool(client *utxorpc.Client) {
 	}
 
 	if err := stream.Err(); err != nil {
-		fmt.Println("Stream ended with error:", err)
+		reportError(err)
 	} else {
 		fmt.Println("Stream ended normally.")
 	}
+}
+
+func reportError(err error) {
+	var transportErr net.Error
+	if errors.As(err, &transportErr) {
+		fmt.Printf("transport error: %v\n", transportErr)
+		return
+	}
+	if connectErr, ok := sdk.AsConnectError(err); ok {
+		fmt.Printf(
+			"RPC error: code=%s message=%q metadata=%v details=%v\n",
+			connectErr.Code(),
+			connectErr.Message(),
+			connectErr.Meta(),
+			connectErr.Details(),
+		)
+		return
+	}
+	fmt.Printf("local error: %v\n", err)
 }

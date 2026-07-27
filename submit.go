@@ -20,7 +20,7 @@ func (u *UtxorpcClient) NewSubmitServiceClient() SubmitServiceClient {
 	return submitconnect.NewSubmitServiceClient(
 		u.httpClient,
 		u.baseUrl,
-		connect.WithGRPC(),
+		u.clientOptions()...,
 	)
 }
 

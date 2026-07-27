@@ -2,12 +2,60 @@ package sdk
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"testing"
 
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
 )
+
+func TestAsConnectError(t *testing.T) {
+	want := connect.NewError(connect.CodeNotFound, errors.New("missing"))
+	got, ok := AsConnectError(errors.Join(errors.New("context"), want))
+	if !ok {
+		t.Fatal("AsConnectError did not recognize a wrapped Connect error")
+	}
+	if got != want {
+		t.Fatalf("AsConnectError returned %p, want %p", got, want)
+	}
+
+	if got, ok := AsConnectError(errors.New("local parse failure")); ok || got != nil {
+		t.Fatalf("AsConnectError returned (%v, %t), want (nil, false)", got, ok)
+	}
+}
+
+func TestWithConnectOptionsAppliesInterceptor(t *testing.T) {
+	intercepted := false
+	interceptor := connect.UnaryInterceptorFunc(
+		func(next connect.UnaryFunc) connect.UnaryFunc {
+			return func(
+				ctx context.Context,
+				req connect.AnyRequest,
+			) (connect.AnyResponse, error) {
+				intercepted = true
+				return next(ctx, req)
+			}
+		},
+	)
+	client := NewClient(
+		WithBaseUrl("http://example.test"),
+		WithHttpClient(failingHTTPClient{}),
+		WithConnectOptions(connect.WithInterceptors(interceptor)),
+	)
+
+	_, _ = client.ReadParams(connect.NewRequest(&query.ReadParamsRequest{}))
+	if !intercepted {
+		t.Fatal("Connect interceptor was not invoked")
+	}
+}
+
+type failingHTTPClient struct{}
+
+func (failingHTTPClient) Do(*http.Request) (*http.Response, error) {
+	return nil, errors.New("transport unavailable")
+}
 
 func TestHeaderManagementAndRequestInjection(t *testing.T) {
 	client := NewClient()

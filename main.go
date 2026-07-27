@@ -27,6 +27,7 @@ type UtxorpcClient struct {
 	headers        map[string]string
 	dialTimeout    time.Duration
 	requestTimeout time.Duration
+	connectOptions []connect.ClientOption
 	Query          QueryServiceClient
 	Submit         SubmitServiceClient
 	Sync           SyncServiceClient
@@ -90,6 +91,21 @@ func WithHttpClient(httpClient connect.HTTPClient) ClientOption {
 	}
 }
 
+// WithConnectOptions applies Connect client options to every generated
+// service client. Use it to configure interceptors, compression, or other
+// Connect behavior without replacing the HTTP client.
+//
+// The SDK continues to configure the gRPC protocol by default. Options are
+// applied after that default, in the order provided.
+func WithConnectOptions(options ...connect.ClientOption) ClientOption {
+	return func(u *UtxorpcClient) {
+		u.connectOptions = append(
+			u.connectOptions,
+			options...,
+		)
+	}
+}
+
 // NewClient constructs a [UtxorpcClient], applies the given options, builds a
 // default HTTP/2 client if [WithHttpClient] was not used, and initializes the
 // Query / Submit / Sync / Watch service clients.
@@ -118,6 +134,12 @@ func (u *UtxorpcClient) reset() {
 	u.Submit = u.NewSubmitServiceClient()
 	u.Sync = u.NewSyncServiceClient()
 	u.Watch = u.NewWatchServiceClient()
+}
+
+func (u *UtxorpcClient) clientOptions() []connect.ClientOption {
+	options := make([]connect.ClientOption, 0, len(u.connectOptions)+1)
+	options = append(options, connect.WithGRPC())
+	return append(options, u.connectOptions...)
 }
 
 // HTTPClient returns the underlying [connect.HTTPClient] used for transport.
@@ -204,12 +226,25 @@ func (u *UtxorpcClient) AddHeadersToRequest(req connect.AnyRequest) {
 	}
 }
 
+// AsConnectError returns the underlying Connect RPC error, including its code,
+// message, details, and response metadata. The boolean is false when err does
+// not contain a [*connect.Error].
+func AsConnectError(err error) (*connect.Error, bool) {
+	connectErr := new(connect.Error)
+	if !errors.As(err, &connectErr) {
+		return nil, false
+	}
+	return connectErr, true
+}
+
 // HandleError prints a Connect error's code, message, and details to stdout
-// and panics. It is intended for examples and quick scripts; production code
-// should inspect [*connect.Error] explicitly via [errors.As].
+// and panics.
+//
+// Deprecated: Handle errors explicitly. Use [AsConnectError] to inspect
+// Connect RPC status information without panicking.
 func HandleError(err error) {
 	fmt.Println(connect.CodeOf(err))
-	if connectErr := new(connect.Error); errors.As(err, &connectErr) {
+	if connectErr, ok := AsConnectError(err); ok {
 		fmt.Println(connectErr.Message())
 		fmt.Println(connectErr.Details())
 	}

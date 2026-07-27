@@ -39,7 +39,10 @@ package main
 
 import (
     "context"
+    "errors"
     "fmt"
+    "log"
+    "net"
 
     "connectrpc.com/connect"
     "github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
@@ -57,11 +60,24 @@ func main() {
 
     // Query protocol parameters
     req := connect.NewRequest(&query.ReadParamsRequest{})
-    client.AddHeadersToRequest(req)
-
-    resp, err := client.Query.ReadParams(context.Background(), req)
+    resp, err := client.ReadParamsWithContext(context.Background(), req)
     if err != nil {
-        panic(err)
+        var transportErr net.Error
+        if errors.As(err, &transportErr) {
+            log.Printf("transport error: %v", transportErr)
+            return
+        }
+        if connectErr, ok := sdk.AsConnectError(err); ok {
+            log.Printf(
+                "RPC error: code=%s message=%q metadata=%v",
+                connectErr.Code(),
+                connectErr.Message(),
+                connectErr.Meta(),
+            )
+            return
+        }
+        log.Printf("local error: %v", err)
+        return
     }
 
     fmt.Printf("Ledger Tip Slot: %d\n", resp.Msg.GetLedgerTip().GetSlot())
@@ -77,6 +93,7 @@ package main
 
 import (
     "fmt"
+    "log"
 
     "github.com/utxorpc/go-sdk"
     "github.com/utxorpc/go-sdk/cardano"
@@ -90,7 +107,8 @@ func main() {
     // Get protocol parameters
     resp, err := client.GetProtocolParameters()
     if err != nil {
-        panic(err)
+        log.Printf("get protocol parameters: %v", err)
+        return
     }
 
     fmt.Printf("Slot: %d\n", resp.Msg.GetLedgerTip().GetSlot())
@@ -101,7 +119,8 @@ func main() {
         0,
     )
     if err != nil {
-        panic(err)
+        log.Printf("get UTxO: %v", err)
+        return
     }
 
     for _, item := range utxo.Msg.GetItems() {
@@ -149,6 +168,38 @@ client := sdk.NewClient(
 | `WithDialTimeout(duration)` | Timeout for establishing connections |
 | `WithRequestTimeout(duration)` | Timeout for individual requests |
 | `WithHttpClient(client)` | Provide a custom HTTP client |
+| `WithConnectOptions(options...)` | Apply Connect options such as interceptors to every service |
+
+### Error Handling
+
+RPC methods return ordinary Go errors and never require panic-based handling.
+Use `errors.As` with `net.Error` to identify underlying transport failures.
+Use `sdk.AsConnectError` to inspect a Connect/gRPC status code, message,
+details, and response metadata. Errors that match neither category are local
+failures such as invalid input or decoding errors.
+
+`sdk.HandleError` remains available for compatibility but is deprecated
+because it panics. Migrate by returning or logging the error and inspecting it
+as shown in the quick-start example.
+
+### Interceptors and Retry
+
+Connect client options can be passed without replacing the SDK's HTTP client:
+
+```go
+client := sdk.NewClient(
+    sdk.WithBaseUrl("https://your-utxorpc-server.com"),
+    sdk.WithConnectOptions(
+        connect.WithInterceptors(metricsInterceptor),
+    ),
+)
+```
+
+The options apply to Query, Submit, Sync, and Watch clients, including clients
+rebuilt by `SetURL`. The SDK does not retry calls by default. A retry
+interceptor should be limited to transient status codes and idempotent reads;
+do not retry `SubmitTx` or other non-idempotent operations unless the
+application provides its own deduplication guarantee.
 
 ### Dynamic Header Management
 
