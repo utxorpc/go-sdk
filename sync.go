@@ -25,7 +25,7 @@ func (u *UtxorpcClient) NewSyncServiceClient() SyncServiceClient {
 	return syncconnect.NewSyncServiceClient(
 		u.httpClient,
 		u.baseUrl,
-		connect.WithGRPC(),
+		u.clientOptions()...,
 	)
 }
 

@@ -44,6 +44,7 @@
 //	WithDialTimeout(d)           — connect timeout (default client only)
 //	WithRequestTimeout(d)        — per-request timeout (default client only)
 //	WithHttpClient(c)            — replace the entire HTTP client
+//	WithConnectOptions(opts...)  — options/interceptors for all service clients
 //
 // Client lifecycle:
 //
@@ -79,9 +80,8 @@
 //
 // Errors:
 //
-//	HandleError(err) — prints the Connect code/message/details and panics.
-//	                   Convenience for examples; production callers should
-//	                   handle [*connect.Error] themselves.
+//	AsConnectError(err) — exposes a Connect code/message/details/metadata.
+//	HandleError(err)    — deprecated panic-based compatibility helper.
 //
 // # Method-pair convention
 //

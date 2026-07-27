@@ -25,7 +25,7 @@ func (u *UtxorpcClient) NewWatchServiceClient() WatchServiceClient {
 	return watchconnect.NewWatchServiceClient(
 		u.httpClient,
 		u.baseUrl,
-		connect.WithGRPC(),
+		u.clientOptions()...,
 	)
 }
 

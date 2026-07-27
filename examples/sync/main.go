@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"net"
 	"os"
 
 	sync "github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
@@ -43,7 +45,8 @@ func fetchBlock(
 	fmt.Println("connecting to utxorpc host:", client.UtxorpcClient.URL())
 	resp, err := client.GetBlockByRef(blockHash, blockIndex)
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
+		return
 	}
 	fmt.Printf("Response: %+v\n", resp)
 	for i, blockRef := range resp.Msg.GetBlock() {
@@ -61,7 +64,7 @@ func followTip(
 	fmt.Println("connecting to utxorpc host:", client.UtxorpcClient.URL())
 	stream, err := client.WatchBlocksByRef(blockHash, blockIndex)
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
 		return
 	}
 	fmt.Println("Connected to utxorpc host, following tip...")
@@ -85,10 +88,29 @@ func followTip(
 	}
 
 	if err := stream.Err(); err != nil {
-		fmt.Println("Stream ended with error:", err)
+		reportError(err)
 	} else {
 		fmt.Println("Stream ended normally.")
 	}
+}
+
+func reportError(err error) {
+	var transportErr net.Error
+	if errors.As(err, &transportErr) {
+		fmt.Printf("transport error: %v\n", transportErr)
+		return
+	}
+	if connectErr, ok := sdk.AsConnectError(err); ok {
+		fmt.Printf(
+			"RPC error: code=%s message=%q metadata=%v details=%v\n",
+			connectErr.Code(),
+			connectErr.Message(),
+			connectErr.Meta(),
+			connectErr.Details(),
+		)
+		return
+	}
+	fmt.Printf("local error: %v\n", err)
 }
 
 func printAnyChainBlock(block *sync.AnyChainBlock) {

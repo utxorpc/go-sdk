@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 
 	"connectrpc.com/connect"
@@ -82,7 +84,8 @@ func readParams(client *utxorpc.Client) {
 	fmt.Println("getting protocol parameters")
 	resp, err := client.GetProtocolParameters()
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
+		return
 	}
 
 	// Uncomment to print the full response for debugging
@@ -107,7 +110,7 @@ func readEraSummary(client *utxorpc.Client) {
 	}
 	resp, err := client.UtxorpcClient.ReadEraSummary(connect.NewRequest(req))
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
 		return
 	}
 	fmt.Printf("Era Summary Response: %+v\n", resp.Msg)
@@ -146,7 +149,7 @@ func readGenesis(client *utxorpc.Client) {
 	}
 	resp, err := client.UtxorpcClient.ReadGenesis(connect.NewRequest(req))
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
 		return
 	}
 
@@ -171,7 +174,7 @@ func readUtxo(
 	fmt.Println("getting utxo by reference")
 	resp, err := client.GetUtxoByRef(txHashStr, txIndex)
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
 		return
 	}
 
@@ -284,7 +287,8 @@ func searchUtxos(
 	fmt.Printf("searching utxos: address: %s, policy: %s, asset: %s\n", rawAddress, policyID, assetName)
 	resp, err := client.UtxorpcClient.SearchUtxos(connect.NewRequest(searchRequest))
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
+		return
 	}
 
 	// Uncomment to print the full response for debugging
@@ -342,7 +346,8 @@ func getUtxosByAddress(
 	fmt.Printf("searching utxos: address: %s\n", rawAddress)
 	resp, err := client.GetUtxosByAddress(addrCbor)
 	if err != nil {
-		sdk.HandleError(err)
+		reportError(err)
+		return
 	}
 
 	// Uncomment to print the full response for debugging
@@ -381,4 +386,23 @@ func getUtxosByAddress(
 			}
 		}
 	}
+}
+
+func reportError(err error) {
+	var transportErr net.Error
+	if errors.As(err, &transportErr) {
+		fmt.Printf("transport error: %v\n", transportErr)
+		return
+	}
+	if connectErr, ok := sdk.AsConnectError(err); ok {
+		fmt.Printf(
+			"RPC error: code=%s message=%q metadata=%v details=%v\n",
+			connectErr.Code(),
+			connectErr.Message(),
+			connectErr.Meta(),
+			connectErr.Details(),
+		)
+		return
+	}
+	fmt.Printf("local error: %v\n", err)
 }

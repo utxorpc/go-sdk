@@ -28,7 +28,7 @@ func (u *UtxorpcClient) NewQueryServiceClient() QueryServiceClient {
 	return queryconnect.NewQueryServiceClient(
 		u.httpClient,
 		u.baseUrl,
-		connect.WithGRPC(),
+		u.clientOptions()...,
 	)
 }
 
