@@ -8,14 +8,11 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
-	"github.com/utxorpc/go-codegen/utxorpc/v1beta/cardano"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/submit"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/sync"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/watch"
 	sdk "github.com/utxorpc/go-sdk"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 // Client is a high-level Cardano client. It embeds a generic
@@ -171,35 +168,26 @@ func (c *Client) GetUtxosByRefsWithContext(
 // GetUtxosByAddress calls [Client.GetUtxosByAddressWithContext] with a background context.
 func (c *Client) GetUtxosByAddress(
 	address []byte,
+	options ...SearchOption,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	return c.GetUtxosByAddressWithContext(context.Background(), address)
+	return c.GetUtxosByAddressWithContext(
+		context.Background(),
+		address,
+		options...,
+	)
 }
 
 // GetUtxosByAddressWithContext searches for UTxOs locked at an exact Cardano
 // address via Query.SearchUtxos. The address must be supplied as raw bytes;
-// bech32 strings must be decoded by the caller. The first page of up to 100
-// results is returned; for full pagination use the generic
-// [(*sdk.UtxorpcClient).SearchUtxos] directly.
+// bech32 strings must be decoded by the caller. By default, the first page of
+// up to 100 results is returned. Use SearchOption values to configure the page,
+// or [Client.GetUtxosByAddressPages] to iterate all pages.
 func (c *Client) GetUtxosByAddressWithContext(
 	ctx context.Context,
 	address []byte,
+	options ...SearchOption,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	queryReq := &query.SearchUtxosRequest{
-		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
-		Predicate: &query.UtxoPredicate{
-			Match: &query.AnyUtxoPattern{
-				UtxoPattern: &query.AnyUtxoPattern_Cardano{
-					Cardano: &cardano.TxOutputPattern{
-						Address: &cardano.AddressPattern{
-							ExactAddress: address,
-						},
-					},
-				},
-			},
-		},
-		MaxItems:   proto.Int32(100), // May need adjustment
-		StartToken: proto.String(""), // For pagination, start at first page
-	}
+	queryReq := newAddressSearchRequest(address, options...)
 	req := connect.NewRequest(queryReq)
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
@@ -210,65 +198,36 @@ func (c *Client) GetUtxosByAddressWithAsset(
 	addressBytes []byte,
 	policyIdBytes []byte,
 	assetNameBytes []byte,
+	options ...SearchOption,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
 	return c.GetUtxosByAddressWithAssetWithContext(
 		context.Background(),
 		addressBytes,
 		policyIdBytes,
 		assetNameBytes,
+		options...,
 	)
 }
 
 // GetUtxosByAddressWithAssetWithContext searches for UTxOs at the given
 // address that hold a matching native asset. policyIdBytes and assetNameBytes
 // are raw bytes; either may be empty to widen the match (policy-only,
-// asset-name-only, or both empty for any UTxO at the address). Returns the
-// first page of up to 100 results.
+// asset-name-only, or both empty for any UTxO at the address). By default, the
+// first page of up to 100 results is returned. Use SearchOption values to
+// configure the page.
 func (c *Client) GetUtxosByAddressWithAssetWithContext(
 	ctx context.Context,
 	addressBytes []byte,
 	policyIdBytes []byte,
 	assetNameBytes []byte,
+	options ...SearchOption,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	tpl := &cardano.TxOutputPattern{
-		Address: &cardano.AddressPattern{
-			ExactAddress: addressBytes,
-		},
-	}
-
-	var assetFilter *cardano.AssetPattern
-
-	if len(policyIdBytes) > 0 && len(assetNameBytes) > 0 {
-		assetFilter = &cardano.AssetPattern{
-			PolicyId:  policyIdBytes,
-			AssetName: assetNameBytes,
-		}
-	} else if len(policyIdBytes) > 0 {
-		assetFilter = &cardano.AssetPattern{
-			PolicyId: policyIdBytes,
-		}
-	} else if len(assetNameBytes) > 0 {
-		assetFilter = &cardano.AssetPattern{
-			AssetName: assetNameBytes,
-		}
-	}
-
-	if assetFilter != nil {
-		tpl.Asset = assetFilter
-	}
-
-	queryReq := &query.SearchUtxosRequest{
-		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
-		Predicate: &query.UtxoPredicate{
-			Match: &query.AnyUtxoPattern{
-				UtxoPattern: &query.AnyUtxoPattern_Cardano{
-					Cardano: tpl,
-				},
-			},
-		},
-		MaxItems:   proto.Int32(100), // May need adjustment
-		StartToken: proto.String(""), // For pagination, start at first page
-	}
+	queryReq := newAddressAssetSearchRequest(
+		addressBytes,
+		policyIdBytes,
+		assetNameBytes,
+		options...,
+	)
 	req := connect.NewRequest(queryReq)
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)
 }
@@ -277,57 +236,34 @@ func (c *Client) GetUtxosByAddressWithAssetWithContext(
 func (c *Client) GetUtxosByAsset(
 	policyIdBytes []byte,
 	assetNameBytes []byte,
+	options ...SearchOption,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
 	return c.GetUtxosByAssetWithContext(
 		context.Background(),
 		policyIdBytes,
 		assetNameBytes,
+		options...,
 	)
 }
 
 // GetUtxosByAssetWithContext searches for UTxOs holding a native asset
 // across all addresses. policyIdBytes and assetNameBytes are raw bytes; at
 // least one must be non-nil — passing nil for both returns an error.
-// Returns the first page of up to 100 results.
+// By default, the first page of up to 100 results is returned. Use SearchOption
+// values to configure the page.
 func (c *Client) GetUtxosByAssetWithContext(
 	ctx context.Context,
 	policyIdBytes []byte,
 	assetNameBytes []byte,
+	options ...SearchOption,
 ) (*connect.Response[query.SearchUtxosResponse], error) {
-	if policyIdBytes == nil && assetNameBytes == nil {
-		return nil, errors.New(
-			"at least one of policyId or assetName must be provided",
-		)
-	}
-
-	assetPattern := &cardano.AssetPattern{}
-	hasAssetFilter := false
-	if policyIdBytes != nil {
-		assetPattern.PolicyId = policyIdBytes
-		hasAssetFilter = true
-	}
-	if assetNameBytes != nil {
-		assetPattern.AssetName = assetNameBytes
-		hasAssetFilter = true
-	}
-
-	cardanoOutputPattern := &cardano.TxOutputPattern{}
-
-	if hasAssetFilter {
-		cardanoOutputPattern.Asset = assetPattern
-	}
-
-	queryReq := &query.SearchUtxosRequest{
-		FieldMask: &fieldmaskpb.FieldMask{Paths: []string{}},
-		Predicate: &query.UtxoPredicate{
-			Match: &query.AnyUtxoPattern{
-				UtxoPattern: &query.AnyUtxoPattern_Cardano{
-					Cardano: cardanoOutputPattern,
-				},
-			},
-		},
-		MaxItems:   proto.Int32(100), // May need adjustment
-		StartToken: proto.String(""), // For pagination, start at first page
+	queryReq, err := newAssetSearchRequest(
+		policyIdBytes,
+		assetNameBytes,
+		options...,
+	)
+	if err != nil {
+		return nil, err
 	}
 	req := connect.NewRequest(queryReq)
 	return c.UtxorpcClient.SearchUtxosWithContext(ctx, req)

@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/utxorpc/go-codegen/utxorpc/v1beta/query"
 	sdk "github.com/utxorpc/go-sdk"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func TestGetUtxoByRefBuildsReadUtxosRequest(t *testing.T) {
@@ -63,6 +64,9 @@ func TestGetUtxosByAssetBuildsSearchRequest(t *testing.T) {
 		context.Background(),
 		policyID,
 		assetName,
+		WithSearchMaxItems(25),
+		WithSearchStartToken("next"),
+		WithSearchFieldMask("items.txo_ref", "ledger_tip"),
 	)
 	if err != nil {
 		t.Fatalf("GetUtxosByAssetWithContext returned error: %v", err)
@@ -72,14 +76,20 @@ func TestGetUtxosByAssetBuildsSearchRequest(t *testing.T) {
 	}
 
 	req := fakeQuery.searchUtxosReq.Msg
-	if got := req.GetMaxItems(); got != 100 {
-		t.Fatalf("max_items = %d, want 100", got)
+	if got := req.GetMaxItems(); got != 25 {
+		t.Fatalf("max_items = %d, want 25", got)
 	}
-	if got := req.GetStartToken(); got != "" {
-		t.Fatalf("start_token = %q, want empty", got)
+	if got := req.GetStartToken(); got != "next" {
+		t.Fatalf("start_token = %q, want %q", got, "next")
 	}
-	if req.GetFieldMask() == nil {
-		t.Fatal("field_mask is nil")
+	wantMask := &fieldmaskpb.FieldMask{
+		Paths: []string{"items.txo_ref", "ledger_tip"},
+	}
+	if !req.GetFieldMask().ProtoReflect().IsValid() {
+		t.Fatal("field_mask is invalid")
+	}
+	if got := req.GetFieldMask().GetPaths(); !slicesEqual(got, wantMask.GetPaths()) {
+		t.Fatalf("field_mask paths = %q, want %q", got, wantMask.GetPaths())
 	}
 
 	pattern := req.GetPredicate().GetMatch().GetCardano()
@@ -96,6 +106,18 @@ func TestGetUtxosByAssetBuildsSearchRequest(t *testing.T) {
 	if got := asset.GetAssetName(); !bytes.Equal(got, assetName) {
 		t.Fatalf("asset_name = %x, want %x", got, assetName)
 	}
+}
+
+func slicesEqual(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
 }
 
 type recordingQueryClient struct {
