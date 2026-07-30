@@ -13,7 +13,16 @@ jobs:
     outputs:
       RELEASE_ID: ${{ steps.create-release.outputs.result }}
     steps:
-      - run: "echo \"RELEASE_TAG=${GITHUB_REF#refs/tags/}\" >> $GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 https://github.com/actions/checkout/releases/tag/v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # Release validation uses the latest Go version covered by CI.
+          go-version: 1.26.x
+      - name: go-build
+        run: go build ./...
+      - name: go-test
+        run: go test ./...
+      - run: echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
       - uses: actions/github-script@v9
         id: create-release
         with:
