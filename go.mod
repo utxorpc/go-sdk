@@ -7,7 +7,7 @@ go 1.25.7
 
 require (
 	connectrpc.com/connect v1.20.0
-	github.com/blinklabs-io/gouroboros v0.192.2
+	github.com/blinklabs-io/gouroboros v0.193.3
 	github.com/utxorpc/go-codegen v0.19.2
 	golang.org/x/net v0.57.0
 	google.golang.org/protobuf v1.36.11
@@ -15,7 +15,7 @@ require (
 
 require (
 	github.com/bits-and-blooms/bitset v1.24.4 // indirect
-	github.com/blinklabs-io/plutigo v0.2.0 // indirect
+	github.com/blinklabs-io/plutigo v0.3.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.5.0 // indirect
 	github.com/btcsuite/btcd/btcutil v1.2.0 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.2.0 // indirect
@@ -28,7 +28,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 )
