@@ -6,7 +6,7 @@ go 1.25.7
 // replace github.com/utxorpc/go-codegen => ../go-codegen
 
 require (
-	connectrpc.com/connect v1.20.0
+	connectrpc.com/connect v1.21.0
 	github.com/blinklabs-io/gouroboros v0.202.4
 	github.com/utxorpc/go-codegen v0.19.2
 	golang.org/x/net v0.58.0
