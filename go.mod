@@ -7,13 +7,14 @@ go 1.25.7
 
 require (
 	connectrpc.com/connect v1.20.0
-	github.com/blinklabs-io/gouroboros v0.202.4
+	github.com/blinklabs-io/gouroboros v0.204.0
 	github.com/utxorpc/go-codegen v0.19.2
 	golang.org/x/net v0.58.0
 	google.golang.org/protobuf v1.36.12
 )
 
 require (
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/bits-and-blooms/bitset v1.24.6 // indirect
 	github.com/blinklabs-io/plutigo v0.5.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.5.0 // indirect
