@@ -1,21 +1,22 @@
 module github.com/utxorpc/go-sdk
 
-go 1.25.7
+go 1.26.5
 
 // XXX: uncomment when testing local changes to spec, after generate
 // replace github.com/utxorpc/go-codegen => ../go-codegen
 
 require (
 	connectrpc.com/connect v1.21.0
-	github.com/blinklabs-io/gouroboros v0.202.4
+	github.com/blinklabs-io/gouroboros v0.205.4
 	github.com/utxorpc/go-codegen v0.19.2
 	golang.org/x/net v0.58.0
 	google.golang.org/protobuf v1.36.12
 )
 
 require (
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/bits-and-blooms/bitset v1.24.6 // indirect
-	github.com/blinklabs-io/plutigo v0.5.0 // indirect
+	github.com/blinklabs-io/plutigo v0.7.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.5.0 // indirect
 	github.com/btcsuite/btcd/btcutil v1.2.0 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.2.0 // indirect
@@ -28,7 +29,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )
