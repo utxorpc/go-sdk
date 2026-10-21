@@ -1,6 +1,7 @@
 package v1alpha
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -132,6 +133,11 @@ func createHttpClient(enableTls bool, dialTimeout, requestTimeout time.Duration)
 	protocols := new(http.Protocols)
 	protocols.SetHTTP2(enableTls)
 	protocols.SetUnencryptedHTTP2(!enableTls)
+	dialer := &net.Dialer{Timeout: dialTimeout}
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		NextProtos: []string{"h2"},
+	}
 
 	return &http.Client{
 		Timeout: requestTimeout,
@@ -139,9 +145,13 @@ func createHttpClient(enableTls bool, dialTimeout, requestTimeout time.Duration)
 			return http.ErrUseLastResponse
 		},
 		Transport: &http.Transport{
-			Protocols:           protocols,
-			DialContext:         (&net.Dialer{Timeout: dialTimeout}).DialContext,
-			TLSHandshakeTimeout: dialTimeout,
+			Protocols:       protocols,
+			DialContext:     dialer.DialContext,
+			TLSClientConfig: tlsConfig,
+			DialTLSContext: (&tls.Dialer{
+				NetDialer: dialer,
+				Config:    tlsConfig,
+			}).DialContext,
 		},
 	}
 }

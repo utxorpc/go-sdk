@@ -72,13 +72,9 @@ func TestDefaultHTTP2Transport(t *testing.T) {
 							httpClient.Timeout, requestTimeout)
 					}
 					transport := httpClient.Transport.(*http.Transport)
-					if transport.TLSHandshakeTimeout != time.Second {
-						t.Fatalf("TLS handshake timeout = %s, want %s",
-							transport.TLSHandshakeTimeout, time.Second)
-					}
 					if useTLS {
-						transport.TLSClientConfig = server.Client().
-							Transport.(*http.Transport).TLSClientConfig.Clone()
+						transport.TLSClientConfig.RootCAs = server.Client().
+							Transport.(*http.Transport).TLSClientConfig.RootCAs
 					}
 
 					req, err := http.NewRequestWithContext(
