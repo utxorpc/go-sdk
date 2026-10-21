@@ -1,8 +1,6 @@
 package v1alpha
 
 import (
-	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -11,7 +9,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"golang.org/x/net/http2"
 )
 
 // UtxorpcClient is a configured client for a UTxO RPC v1alpha server. It
@@ -132,30 +129,19 @@ func (u *UtxorpcClient) URL() string {
 }
 
 func createHttpClient(enableTls bool, dialTimeout, requestTimeout time.Duration) *http.Client {
+	protocols := new(http.Protocols)
+	protocols.SetHTTP2(enableTls)
+	protocols.SetUnencryptedHTTP2(!enableTls)
+
 	return &http.Client{
 		Timeout: requestTimeout,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
-		Transport: &http2.Transport{
-			AllowHTTP: true,
-			DialTLSContext: func(ctx context.Context, network, addr string, tlsConfig *tls.Config) (net.Conn, error) {
-				if enableTls {
-					// Establish a TLS connection using the custom TLS configuration
-					conn, err := (&tls.Dialer{
-						NetDialer: &net.Dialer{Timeout: dialTimeout},
-						Config:    tlsConfig,
-					}).DialContext(ctx, network, addr)
-					if err != nil {
-						return nil, fmt.Errorf(
-							"failed to establish TLS connection: %w",
-							err,
-						)
-					}
-					return conn, nil
-				}
-				return (&net.Dialer{Timeout: dialTimeout}).DialContext(ctx, network, addr)
-			},
+		Transport: &http.Transport{
+			Protocols:           protocols,
+			DialContext:         (&net.Dialer{Timeout: dialTimeout}).DialContext,
+			TLSHandshakeTimeout: dialTimeout,
 		},
 	}
 }
