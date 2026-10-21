@@ -7,7 +7,7 @@ Guidance for any coding agent or contributor working on this repository. This is
 The UTxO RPC Go SDK — a Go client for [UTxO RPC](https://utxorpc.org) servers. Implements the UTxO RPC spec (Query, Submit, Sync, Watch services) over HTTP/2 using Connect RPC, with optional Cardano-specific helpers.
 
 - Module: `github.com/utxorpc/go-sdk`
-- Go: 1.25+ (see `go.mod`)
+- Go: 1.26+ (see `go.mod`)
 - License: Apache-2.0
 
 ## Repository layout
