@@ -9,7 +9,7 @@ require (
 	connectrpc.com/connect v1.21.1
 	github.com/blinklabs-io/gouroboros v0.213.6
 	github.com/utxorpc/go-codegen v0.19.2
-	golang.org/x/net v0.58.0
+	golang.org/x/net v0.61.0
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -29,7 +29,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 )
