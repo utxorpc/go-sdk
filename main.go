@@ -45,8 +45,8 @@ func WithBaseUrl(baseUrl string) ClientOption {
 	}
 }
 
-// WithHeaders sets the initial set of headers attached to every request
-// (e.g. API keys). Headers can be added, replaced, or removed later via
+// WithHeaders sets the initial headers injected by SDK wrappers (e.g. API
+// keys). Headers can be added, replaced, or removed later via
 // [UtxorpcClient.SetHeader], [UtxorpcClient.SetHeaders], and
 // [UtxorpcClient.RemoveHeader].
 func WithHeaders(headers map[string]string) ClientOption {
@@ -68,9 +68,10 @@ func WithDialTimeout(timeout time.Duration) ClientOption {
 	}
 }
 
-// WithRequestTimeout sets the timeout duration for individual requests made by the UtxorpcClient.
-// The timeout applies to each request operation and will cause the request to fail if it
-// exceeds the specified duration. If not set, requests will use the default timeout behavior.
+// WithRequestTimeout sets the default HTTP client's timeout for the entire
+// request, including reading the response body. For streaming RPCs this
+// limits the stream's lifetime. The default is zero (no client-wide timeout);
+// caller-supplied contexts may still impose deadlines or cancellation.
 //
 // This setting does not apply if a custom HTTP client is provided via WithHttpClient.
 //
@@ -217,7 +218,7 @@ func (u *UtxorpcClient) RemoveHeader(key string) {
 
 // AddHeadersToRequest copies all stored headers into the given Connect
 // request. The wrapper methods on [UtxorpcClient] call this automatically;
-// callers only need it when invoking the embedded [QueryServiceClient],
+// callers only need it when invoking the underlying [QueryServiceClient],
 // [SubmitServiceClient], [SyncServiceClient], or [WatchServiceClient]
 // directly.
 func (u *UtxorpcClient) AddHeadersToRequest(req connect.AnyRequest) {

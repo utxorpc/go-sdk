@@ -7,7 +7,7 @@ Guidance for any coding agent or contributor working on this repository. This is
 The UTxO RPC Go SDK — a Go client for [UTxO RPC](https://utxorpc.org) servers. Implements the UTxO RPC spec (Query, Submit, Sync, Watch services) over HTTP/2 using Connect RPC, with optional Cardano-specific helpers.
 
 - Module: `github.com/utxorpc/go-sdk`
-- Go: 1.26+ (see `go.mod`)
+- Go: 1.26.10+ (see `go.mod`)
 - License: Apache-2.0
 
 ## Repository layout
@@ -19,6 +19,7 @@ The UTxO RPC Go SDK — a Go client for [UTxO RPC](https://utxorpc.org) servers.
   submit.go        Submit service wrappers
   sync.go          Sync service wrappers
   watch.go         Watch service wrappers
+  pagination.go    Shared request-header copying for page iterators
   doc.go           Package GoDoc
 cardano/           Cardano-specific high-level client
 v1alpha/           Legacy v1alpha clients (frozen, kept for back-compat)
@@ -52,7 +53,7 @@ go run examples/query/main.go
 
 **Generic SDK** (root package `sdk`): blockchain-agnostic. `UtxorpcClient` exposes four service fields — `Query`, `Submit`, `Sync`, `Watch` — created via `NewClient(opts...)` using functional options (`WithBaseUrl`, `WithHeaders`, `WithHttpClient`, `WithDialTimeout`, `WithRequestTimeout`, etc.).
 
-**Cardano layer** (`cardano` package): wraps `UtxorpcClient` with Cardano-specific helpers — hex/base64 decoding of tx hashes and addresses, methods like `GetUtxoByRef`, `SubmitTransaction`, `GetTip`. Built on top of `gouroboros` for address handling.
+**Cardano layer** (`cardano` package): holds a `UtxorpcClient` in its named `UtxorpcClient` field and adds helpers such as `GetUtxoByRef`, `SubmitTransaction`, and `GetTip`. Transaction references accept hex or base64 where documented; address and asset searches take raw bytes. The examples use `gouroboros` to decode bech32 addresses.
 
 ### Versioning
 
@@ -90,18 +91,28 @@ These return `*connect.ServerStreamForClient`:
 
 Streaming wrappers also follow the method-pair convention.
 
+Streams use Connect RPC server streaming over HTTP/2. Close streams and check
+`Err()` after iteration. A configured request timeout includes the stream's
+entire lifetime; use appropriate contexts for long-running streams.
+
+### Pagination and Cardano search
+
+- `SearchUtxosPages` and `DumpHistoryPages` (plus `WithContext` variants) return lazy `iter.Seq2` sequences of responses and errors. They clone requests and copy headers for every page; early termination prevents further page requests.
+- Cardano address/asset searches return one page of up to 100 results by default. `SearchOption` values configure page size, start token, and field mask; the `Pages` variants iterate all pages.
+- Existing Cardano context variants for submit, evaluation, transaction waiting, block fetching, and block/transaction watching take protobuf requests instead of convenience arguments. Check signatures rather than assuming they only add a context parameter.
+
 ### Key dependencies
 
 - `connectrpc.com/connect` — RPC framework (gRPC-compatible, HTTP/2).
 - `github.com/utxorpc/go-codegen` — generated protobuf types for the spec.
 - `github.com/blinklabs-io/gouroboros` — Cardano primitives (address handling).
-- `golang.org/x/net/http2` — explicit HTTP/2 transport.
+- `net/http` — standard-library transport with HTTP/2 and cleartext HTTP/2 support.
 
 ## Code style
 
 - **Formatting**: `gofumpt`, `gofmt -s`, `goimports`, `gci`. All declared in `.golangci.yml` and run by CI. Run `make format` (and optionally `make golines`) before committing.
 - **Line length**: 80 columns when running `make golines`. Don't fight the tool — let it split chains on dots.
-- **Linting**: CI runs `golangci-lint` with the set in `.golangci.yml` (`errorlint`, `gosec`, `perfsprint`, `prealloc`, `protogetter`, `bodyclose`, `contextcheck`, `errcheckjson`, `nilerr`, `unparam`, etc.). Match existing style; don't add `//nolint:` without a real reason.
+- **Linting**: CI runs `golangci-lint` with the set in `.golangci.yml` (`errorlint`, `gosec`, `perfsprint`, `prealloc`, `protogetter`, `bodyclose`, `contextcheck`, `errchkjson`, `nilerr`, `unparam`, etc.). Match existing style; don't add `//nolint:` without a real reason.
 - **Errors**: use `errors.Is` / `errors.As` (errorlint is on); never compare errors with `==`.
 - **Performance**: pre-allocate slices when length is known (`prealloc`); prefer `strconv` over `fmt.Sprintf` for trivial conversions (`perfsprint`).
 - **Protobuf accessors**: use generated `GetX()` getters rather than direct field access (`protogetter`).

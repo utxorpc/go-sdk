@@ -13,9 +13,9 @@ import (
 )
 
 // UtxorpcClient is a configured client for a UTxO RPC v1alpha server. It
-// mirrors the API of [github.com/utxorpc/go-sdk.UtxorpcClient] one-for-one
-// with v1alpha protobuf types. Construct via [NewClient]; the zero value is
-// not usable.
+// provides the legacy service wrappers with v1alpha protobuf types. Newer
+// v1beta helpers are available in [github.com/utxorpc/go-sdk.UtxorpcClient].
+// Construct via [NewClient]; the zero value is not usable.
 type UtxorpcClient struct {
 	httpClient     connect.HTTPClient
 	baseUrl        string
@@ -40,8 +40,7 @@ func WithBaseUrl(baseUrl string) ClientOption {
 	}
 }
 
-// WithHeaders sets the initial set of headers attached to every request
-// (e.g. API keys).
+// WithHeaders sets the initial headers injected by SDK wrappers (e.g. API keys).
 func WithHeaders(headers map[string]string) ClientOption {
 	return func(u *UtxorpcClient) {
 		u.headers = headers
@@ -61,9 +60,10 @@ func WithDialTimeout(timeout time.Duration) ClientOption {
 	}
 }
 
-// WithRequestTimeout sets the timeout duration for individual requests made by the UtxorpcClient.
-// The timeout applies to each request operation and will cause the request to fail if it
-// exceeds the specified duration. If not set, requests will use the default timeout behavior.
+// WithRequestTimeout sets the default HTTP client's timeout for the entire
+// request, including reading the response body. For streaming RPCs this
+// limits the stream's lifetime. The default is zero (no client-wide timeout);
+// caller-supplied contexts may still impose deadlines or cancellation.
 //
 // This setting does not apply if a custom HTTP client is provided via WithHttpClient.
 //
