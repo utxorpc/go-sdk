@@ -1,4 +1,4 @@
-package sdk
+package cardano
 
 import (
 	"bytes"
@@ -29,8 +29,8 @@ type decoded struct {
 	txs     []vectorTx
 }
 
-func TestProtocolVectors(t *testing.T) {
-	dir := filepath.Join("testdata", "protocol-vectors")
+func TestVectors(t *testing.T) {
+	dir := filepath.Join("testdata", "vectors")
 
 	index, err := os.Open(filepath.Join(dir, "vectors.tsv"))
 	if err != nil {
